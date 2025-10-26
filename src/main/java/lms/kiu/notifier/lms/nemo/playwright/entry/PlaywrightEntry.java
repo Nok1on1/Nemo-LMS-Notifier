@@ -9,11 +9,14 @@ import com.microsoft.playwright.Page.NavigateOptions;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.WaitUntilState;
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 import lms.kiu.notifier.lms.nemo.mongo.model.Student;
 import lms.kiu.notifier.lms.nemo.mongo.service.StudentService;
 import lms.kiu.notifier.lms.nemo.playwright.data.Constants;
+import lms.kiu.notifier.lms.nemo.playwright.model.CoursePosts;
+import lms.kiu.notifier.lms.nemo.playwright.model.Post;
 import lms.kiu.notifier.lms.nemo.playwright.steps.CourseInteractionTabSteps;
 import lms.kiu.notifier.lms.nemo.playwright.steps.CourseSteps;
 import lms.kiu.notifier.lms.nemo.playwright.steps.CourseSubSectionTabSteps;
@@ -110,8 +113,8 @@ public class PlaywrightEntry {
    *
    * @return Hashmap: key - (URL of Messages' Page), value - (Number of New Messages)
    */
-  public HashMap<String, Integer> fetchNewMessages() {
-    HashMap<String, Integer> newMessages = new HashMap<>();
+  public List<CoursePosts> fetchNewMessages() {
+    List<CoursePosts> newMessages = new LinkedList<>();
 
     LocalDateTime lastCheck = Objects.requireNonNull(studentService
             .findByTelegramId(student.getTelegramId())
@@ -129,11 +132,15 @@ public class PlaywrightEntry {
       Locator course;
 
       while (true) {
-        course = lmsSteps.goToNextCourse();
+        course = lmsSteps.getNextCourse();
 
         if (course == null) {
           break;
         }
+
+        String courseName = lmsSteps.getCourseName(course);
+
+        course.click();
 
         courseSteps.buildSubSectionIterator();
 
@@ -141,7 +148,15 @@ public class PlaywrightEntry {
 
           courseSubSectionTabSteps.goToInteraction();
 
-          newMessages.putAll(courseInteractionTabSteps.getNewMessages(lastCheck));
+          List<Post> posts = courseInteractionTabSteps.getNewMessages(lastCheck);
+
+          if (!posts.isEmpty()) {
+            newMessages.add(
+                CoursePosts
+                    .builder().courseName(courseName)
+                    .posts(posts)
+                    .build());
+          }
 
           page.goBack();
 

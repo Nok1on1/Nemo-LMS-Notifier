@@ -1,14 +1,18 @@
 package lms.kiu.notifier.lms.nemo.playwright.steps;
 
 import static lms.kiu.notifier.lms.nemo.playwright.data.Constants.PLAYWRIGHT_THREAD_SLEEP_TIME;
+import static lms.kiu.notifier.lms.nemo.playwright.util.MessageUtils.cropMessages;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lms.kiu.notifier.lms.nemo.playwright.data.Constants;
+import lms.kiu.notifier.lms.nemo.playwright.model.Post;
 import lms.kiu.notifier.lms.nemo.playwright.pages.CourseInteractionTabPage;
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,29 +32,44 @@ public class CourseInteractionTabSteps {
     courseInteractionTabpage = new CourseInteractionTabPage(page);
   }
 
-  public Map<String, Integer> getNewMessages(LocalDateTime lastCheck) {
-    int newMessageCounter = 0;
+  public List<Post> getNewMessages(LocalDateTime lastCheck) {
 
     log.info("Playwright - Retrieving New Messages...");
 
     try {
       Thread.sleep(PLAYWRIGHT_THREAD_SLEEP_TIME);
     } catch (InterruptedException e) {
-      return Map.of();
+      return new LinkedList<>();
     }
 
-    for (var message : courseInteractionTabpage.messagesLocator.all()) {
-      if (getTime(message).isAfter(lastCheck)) {
-        newMessageCounter++;
+
+    int postsCount = courseInteractionTabpage.messagesLocator.all().size();
+
+    if (postsCount == 0) {
+      return new LinkedList<>();
+    }
+
+    int postMessageLimit = Constants.TELEGRAM_CHAT_LIMIT / postsCount;
+
+    List<Post> posts = new LinkedList<>();
+
+    for (var messageLocator : courseInteractionTabpage.messagesLocator.all()) {
+      LocalDateTime messageDate = getTime(messageLocator);
+
+      String limitedMessage = cropMessages(getMessage(messageLocator), postMessageLimit);
+
+      if (messageDate.isAfter(lastCheck)) {
+        posts.add(
+            Post.builder()
+                .url(page.url())
+                .date(messageDate)
+                .message(limitedMessage)
+                .build());
       }
+
     }
 
-    if (newMessageCounter > 0) {
-      log.info("Playwright - Retrieved {} Messages", newMessageCounter);
-      return Map.of(page.url(), newMessageCounter);
-    } else {
-      return Map.of();
-    }
+    return posts;
   }
 
 
@@ -63,6 +82,12 @@ public class CourseInteractionTabSteps {
     } else {
       throw new IllegalArgumentException("Could not parse date from: " + time);
     }
+  }
+
+  private String getMessage(Locator messageLocator) {
+    return messageLocator
+        .locator(".announcement-title > div:nth-child(2)")
+        .innerText();
   }
 
 

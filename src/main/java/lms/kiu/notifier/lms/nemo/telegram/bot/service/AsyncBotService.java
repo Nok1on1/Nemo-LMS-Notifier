@@ -2,11 +2,13 @@ package lms.kiu.notifier.lms.nemo.telegram.bot.service;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import lms.kiu.notifier.lms.nemo.mongo.model.Student;
 import lms.kiu.notifier.lms.nemo.mongo.service.StudentService;
 import lms.kiu.notifier.lms.nemo.playwright.entry.PlaywrightEntry;
+import lms.kiu.notifier.lms.nemo.playwright.model.CoursePosts;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +29,7 @@ public class AsyncBotService {
   private final StudentService studentService;
 
   @Async
-  public CompletableFuture<HashMap<String, Integer>> checkNewsAsync(
+  public CompletableFuture<List<CoursePosts>> checkNewsAsync(
       Long chatId,
       TelegramClient telegramClient,
       SilentSender silent) {
@@ -48,17 +50,17 @@ public class AsyncBotService {
 
       silent.send("It looks like you haven't registered yet.", chatId);
 
-      return CompletableFuture.completedFuture(new HashMap<>());
+      return CompletableFuture.completedFuture(new LinkedList<>());
     }
 
     log.info("Student found: {}", student.getTelegramId());
 
-    HashMap<String, Integer> newsResults = new PlaywrightEntry(student,
+    List<CoursePosts> newMessages = new PlaywrightEntry(student,
         studentService).fetchNewMessages();
 
-    silent.send("News check complete! Found " + newsResults.size() + " updates.", chatId);
+    silent.send("News check complete! Found " + newMessages.size() + " updates.", chatId);
 
-    return CompletableFuture.completedFuture(newsResults);
+    return CompletableFuture.completedFuture(newMessages);
   }
 
   @Async("asyncTelegramBot")

@@ -15,4 +15,7 @@ public class Constants {
   // TODO: ROMELIME WASHALE!
   public static String MAIN_PAGE = "https://lms.kiu.edu.ge/#/dashboard";
   public static String MAIN_URL = "https://lms.kiu.edu.ge";
+
+  // it's 4096 but limiting space for additional info
+  public static int TELEGRAM_CHAT_LIMIT = 3500;
 }

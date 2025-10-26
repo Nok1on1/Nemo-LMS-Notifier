@@ -6,12 +6,11 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import java.util.Iterator;
 import lms.kiu.notifier.lms.nemo.playwright.pages.LmsPage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class LmsSteps {
 
-  private static final Logger log = LoggerFactory.getLogger(LmsSteps.class);
   LmsPage lmsPage;
   Page page;
   Iterator<Locator> courseIterator;
@@ -31,12 +30,15 @@ public class LmsSteps {
     log.info(lmsPage.coursesLocator.all().size() + " courses found");
   }
 
-  public Locator goToNextCourse() {
+  public Locator getNextCourse() {
     Locator nextCourse = null;
     if (courseIterator.hasNext()) {
       nextCourse = courseIterator.next();
-      nextCourse.click();
     }
     return nextCourse;
+  }
+
+  public String getCourseName(Locator courseLocator) {
+    return courseLocator.locator("div.text").innerText();
   }
 }

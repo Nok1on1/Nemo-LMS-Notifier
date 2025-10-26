@@ -82,7 +82,6 @@ public class KiuNemoBot extends AbilityBot {
 
       log.info("Received file - ID: {}, Name: {}, Size: {} bytes", fileId, fileName, fileSize);
 
-      // Validation
       if (!fileName.endsWith(".txt")) {
         silent.send("File is not .txt extension. Start Again!", chatId);
         return;
@@ -92,7 +91,6 @@ public class KiuNemoBot extends AbilityBot {
         return;
       }
 
-      // Send immediate acknowledgment
       silent.send("Processing your registration...", chatId);
 
       try {
@@ -122,19 +120,16 @@ public class KiuNemoBot extends AbilityBot {
         .action(ctx -> {
           Long chatId = ctx.chatId();
 
-          // Send immediate acknowledgment
-          silent.send("Checking News on " + Constants.MAIN_URL, chatId);
+          silent.send(String.format(
+                  "Checking News on %s \n this will take up to 30 seconds...", Constants.MAIN_URL),
+              chatId);
 
           // Process asynchronously
           asyncBotService.checkNewsAsync(chatId, telegramClient, silent)
               .thenAccept(result -> {
-                if (!result.isEmpty()) {
-                  silent.send("New Messages On Following Links", chatId);
-                }
-                for (var entry : result.entrySet()) {
+                for (var coursePosts : result) {
                   silent.send(
-                      String.format("%d Message(s) on URL: %s",
-                          entry.getValue(), entry.getKey()),
+                      coursePosts.toString(),
                       chatId
                   );
                 }
