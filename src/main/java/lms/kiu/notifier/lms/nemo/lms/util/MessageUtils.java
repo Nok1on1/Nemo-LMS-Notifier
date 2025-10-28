@@ -1,8 +1,8 @@
-package lms.kiu.notifier.lms.nemo.playwright.util;
+package lms.kiu.notifier.lms.nemo.lms.util;
 
 public class MessageUtils {
 
-  public static String cropMessages(String message, int charLimit) {
+  public static String cropMessage(String message, int charLimit) {
     if (message == null || message.length() <= charLimit) {
       return message;
     }
@@ -17,5 +17,4 @@ public class MessageUtils {
 
     return oddlyCut.substring(0, lastSpace).trim();
   }
-
 }

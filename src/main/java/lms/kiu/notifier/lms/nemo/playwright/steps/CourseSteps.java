@@ -1,6 +1,6 @@
 package lms.kiu.notifier.lms.nemo.playwright.steps;
 
-import static lms.kiu.notifier.lms.nemo.playwright.data.Constants.PLAYWRIGHT_THREAD_SLEEP_TIME;
+import static lms.kiu.notifier.lms.nemo.data.Constants.PLAYWRIGHT_THREAD_SLEEP_TIME;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
