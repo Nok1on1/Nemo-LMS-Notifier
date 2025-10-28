@@ -1,8 +1,11 @@
 package lms.kiu.notifier.lms.nemo.mongo.service;
 
+import java.time.LocalDateTime;
+import lms.kiu.notifier.lms.nemo.mongo.model.Course;
 import lms.kiu.notifier.lms.nemo.mongo.model.Student;
 import lms.kiu.notifier.lms.nemo.mongo.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -11,6 +14,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StudentService {
@@ -35,10 +39,33 @@ public class StudentService {
   }
 
   public Mono<Student> updateStudentToken(Long telegramId, String token) {
-    Query query = new Query(Criteria.where("telegram_id").is(telegramId));
+    Query query = new Query(Criteria.where("telegramId").is(telegramId));
 
     Update update = new Update().set("studentToken", token);
 
-    return template.findAndModify(query, update, FindAndModifyOptions.options().returnNew(true), Student.class);
+    return template.findAndModify(query, update, FindAndModifyOptions.options().returnNew(true),
+        Student.class);
+  }
+
+  public Mono<Student> updateLastCheck(Long telegramId) {
+    Query query = new Query(Criteria.where("telegramId").is(telegramId));
+
+    Update update = new Update().set("lastCheck", LocalDateTime.now());
+
+    return template.findAndModify(query, update, FindAndModifyOptions.options().returnNew(true),
+        Student.class);
+  }
+
+  public Mono<Student> addCourse(Long telegramId, Course courseData) {
+    Query query = new Query(Criteria.where("telegramId").is(telegramId));
+
+    Update update = new Update().addToSet("enrolledCourseIds", courseData.getId());
+
+    return template.findAndModify(
+        query,
+        update,
+        FindAndModifyOptions.options().returnNew(true),
+        Student.class
+    );
   }
 }

@@ -1,6 +1,5 @@
-package lms.kiu.notifier.lms.nemo.telegram.bot.config;
+package lms.kiu.notifier.lms.nemo.telegram.bot;
 
-import lms.kiu.notifier.lms.nemo.telegram.bot.KiuNemoBot;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

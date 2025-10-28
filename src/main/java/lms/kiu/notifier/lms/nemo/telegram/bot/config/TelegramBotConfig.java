@@ -1,12 +1,15 @@
 package lms.kiu.notifier.lms.nemo.telegram.bot.config;
 
 
+import lms.kiu.notifier.lms.nemo.lms.service.LMSService;
+import lms.kiu.notifier.lms.nemo.mongo.service.CourseService;
 import lms.kiu.notifier.lms.nemo.mongo.service.StudentService;
 import lms.kiu.notifier.lms.nemo.telegram.bot.KiuNemoBot;
-import lms.kiu.notifier.lms.nemo.telegram.bot.service.AsyncBotService;
+import lms.kiu.notifier.lms.nemo.telegram.bot.service.BotService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
@@ -28,19 +31,22 @@ public class TelegramBotConfig {
     return new OkHttpTelegramClient(botToken);
   }
 
+
   @Bean
-  public AsyncBotService asyncBotService(StudentService studentService) {
-    return new AsyncBotService(studentService);
+  public BotService botService(StudentService studentService, CourseService courseService, TextEncryptor textEncryptor) {
+    return new BotService(studentService, courseService, textEncryptor);
   }
 
   @Bean
   public KiuNemoBot kiuNemoBot(
       TelegramClient telegramClient,
-      AsyncBotService asyncBotService) {
+      BotService botService,
+      LMSService lmsService) {
     return new KiuNemoBot(
         telegramClient,
         botUsername,
-        asyncBotService
+        botService,
+        lmsService
     );
   }
 }
