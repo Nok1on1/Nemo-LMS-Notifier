@@ -25,24 +25,25 @@ repositories {
 }
 
 dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb-reactive'
     implementation 'org.springframework.session:spring-session-data-mongodb'
 
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
     implementation 'org.telegram:telegrambots-springboot-longpolling-starter:9.2.0'
     implementation 'org.telegram:telegrambots-client:9.2.0'
     implementation 'org.telegram:telegrambots-abilities:9.2.0'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
-
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
-//    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
-    implementation 'io.github.cdimascio:dotenv-java:3.2.0'
     implementation 'com.microsoft.playwright:playwright:1.56.0'
 
+    implementation 'org.jsoup:jsoup:1.17.2'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    implementation 'io.github.cdimascio:dotenv-java:3.2.0'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+//    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'io.projectreactor:reactor-test'
