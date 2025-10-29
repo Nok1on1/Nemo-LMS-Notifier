@@ -12,6 +12,8 @@ import org.jsoup.Jsoup;
 @Builder
 public class AssignmentMessage {
 
+  private String courseName;
+
   private String title;
 
   private String description;
@@ -25,11 +27,12 @@ public class AssignmentMessage {
     return String.format("""
         Assignment:
           end Date: %s
+          courseName: %s
           title: %s
           description:
             %s
           embeddedFileLinks: %s
-        """, endDate.toString(), title, description, embeddedFileLinks);
+        """, endDate.toString(), courseName, title, description, embeddedFileLinks);
   }
 
   public static class AssignmentMessageBuilder {
@@ -37,6 +40,8 @@ public class AssignmentMessage {
     public AssignmentMessageBuilder description(String description) {
       if (description != null) {
         this.description = cropMessage(Jsoup.parse(description).wholeText(), 3000);
+      } else {
+        this.description = "";
       }
 
       return this;

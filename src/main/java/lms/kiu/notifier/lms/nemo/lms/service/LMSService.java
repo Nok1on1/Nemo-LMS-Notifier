@@ -97,35 +97,28 @@ public class LMSService {
 
     String studentToken = textEncryptor.decrypt(student.getStudentToken());
 
-    List<AssignmentResponse> AssignmentResponseList =
-        Flux.fromIterable(student.getEnrolledCourseIds())
-            .flatMap(courseService::getAssignmentRequest)
-            .flatMap(courseRequest ->
-                webClient.post()
-                    .uri("student/lms/learningCourses/group/getAssignmentList")
-                    .header("Authorization", "Bearer " + studentToken)
-                    .bodyValue(courseRequest)
-                    .retrieve()
-                    .bodyToFlux(AssignmentResponse.class)).collectList().block();
-
-    //Stream<DataItem>
-    var assignmentData = Objects.requireNonNull(AssignmentResponseList).stream()
-        .flatMap(assRes -> assRes.getData().stream());
-
-    List<AssignmentMessage> list = assignmentData
-        .filter(data -> data.getUpdatedAt().isAfter(student.getLastCheck()))
-        .map(data ->
-            AssignmentMessage.builder()
-                .endDate(data.getEndDate())
-                .title(data.getTitle())
-                .description(data.getDescription())
-                .embeddedFileLinks(data.getFileUrls())
-                .build()).toList();
-
-    // !!FIX!!
-    studentService.updateLastCheck(student.getTelegramId()).block();
-
-    return CompletableFuture.completedFuture(list);
+    return Flux.fromIterable(
+            student.getEnrolledCourseIds())
+        .flatMap(
+            courseService::getAssignmentRequestAndCourseName)
+        .flatMap(tuple ->
+            webClient.post()
+                .uri("student/lms/learningCourses/group/getAssignmentList")
+                .header("Authorization", "Bearer " + studentToken)
+                .bodyValue(tuple.getT2())
+                .retrieve()
+                .bodyToFlux(AssignmentResponse.class)
+                .flatMap(
+                    res -> Flux.fromIterable(res.getData())
+                        .filter(data -> data.getUpdatedAt().isAfter(student.getLastCheck()))
+                        .map(dataItem -> AssignmentMessage.builder()
+                            .courseName(tuple.getT1())
+                            .endDate(dataItem.getEndDate())
+                            .title(dataItem.getTitle())
+                            .embeddedFileLinks(dataItem.getFileUrls())
+                            .build())
+                )
+        ).collectList().toFuture();
   }
 
 

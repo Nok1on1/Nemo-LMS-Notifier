@@ -149,24 +149,28 @@ The bot will:
 ## 🏗️ Project Structure
 
 p.s might not be accurate
-
-```
+```text
 src/main/java/lms/kiu/notifier/lms/nemo/
-├── data/                    # Constants and data classes
-├── lms/                     # LMS-specific logic
-├── mongo/                   # MongoDB models & services
-│   ├── model/              # Student & Course entities
-│   ├── repository/         # Spring Data repositories
-│   └── service/            # Business logic services
-├── playwright/             # Browser automation
-│   ├── entry/              # Main automation scripts
-│   ├── steps/              # Page object models
-│   └── util/               # Utility helpers
-├── telegram/               # Telegram bot
-│   └── bot/
-│       ├── config/         # Bot configuration
-│       └── service/        # Bot services
-└── NemoLmsNotifierApplication.java  # Main application
+├── data/ # Constants and models
+├── lms/ # LMS automation logic
+│ ├── model/ # Request/response models
+│ └── service/ # LMS API services
+├── mongo/ # Database layer
+│ ├── model/ # MongoDB entities
+│ ├── repository/ # Spring Data repositories
+│ └── service/ # Database services
+├── playwright/ # Browser automation
+│ ├── page/ # Page objects
+│ ├── operation/ # Browser operations
+│ └── util/ # Helper utilities
+├── scheduler/ # Scheduled tasks
+├── security/ # Encryption, tokens
+├── telegram/ # Telegram bot
+│ ├── command/ # Bot commands
+│ ├── config/ # Bot config
+│ └── service/ # Bot services
+└── NemoLmsNotifierApplication.java
+
 ```
 
 ## 🎨 Architecture Highlights
@@ -189,6 +193,12 @@ records).
 ### Secure by Design 🔐
 
 Student tokens are encrypted using Spring Security's `TextEncryptor`. No plain-text secrets here!
+
+### Automatic Scheduler 🕒
+
+- The bot automatically checks your LMS 3 times a day — at 11:00, 16:00, and 20:00 (Tbilisi time)
+- You’ll receive updates even if you don’t run /check_news yourself
+- Sit back and let the bot keep you in the loop 📬
 
 ## 🐛 Known Issues (Features?)
 
