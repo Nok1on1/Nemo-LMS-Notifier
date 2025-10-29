@@ -38,7 +38,9 @@ public class AnnouncementMessage {
     }
 
     public AnnouncementMessageBuilder message(String message) {
-      this.message = cropMessage(Jsoup.parse(message).wholeText(), 3800);
+      if (message != null) {
+        this.message = cropMessage(Jsoup.parse(message).wholeText(), 3800);
+      }
       return this;
     }
   }

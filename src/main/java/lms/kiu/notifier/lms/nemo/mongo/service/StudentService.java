@@ -12,6 +12,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -67,5 +68,10 @@ public class StudentService {
         FindAndModifyOptions.options().returnNew(true),
         Student.class
     );
+  }
+
+
+  public Flux<Student> findStudentsByLastCheckBefore(LocalDateTime lastCheckBefore){
+    return repo.findStudentsByLastCheckBefore(lastCheckBefore);
   }
 }

@@ -4,7 +4,7 @@ public class MessageUtils {
 
   public static String cropMessage(String message, int charLimit) {
     if (message == null || message.length() <= charLimit) {
-      return message;
+      return "";
     }
 
     String oddlyCut = message.substring(0, charLimit);

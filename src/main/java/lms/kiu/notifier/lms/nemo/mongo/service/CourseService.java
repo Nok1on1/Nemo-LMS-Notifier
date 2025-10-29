@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 @Slf4j
 @Service
@@ -30,8 +32,6 @@ public class CourseService {
 
   public Mono<AnnouncementRequest> getAnnouncementRequest(String id) {
     return findCourseById(id)
-        .doOnNext(course -> log.debug("Creating announcement request for course: {}, group: {}",
-            course.getCourseId(), course.getGroupId()))
         .map(course -> new AnnouncementRequest(course.getCourseId(), course.getGroupId()))
         .doOnError(error -> log.error("Error getting announcement request for course id {}: {}",
             id, error.getMessage()))
@@ -41,16 +41,14 @@ public class CourseService {
         });
   }
 
-  public Mono<AssignmentRequest> getAssignmentRequest(String id) {
+  public Mono<Tuple2<String, AssignmentRequest>> getAssignmentRequestAndCourseName(String id) {
     return findCourseById(id)
-        .doOnNext(course -> log.debug("Creating assignment request for course: {}, group: {}",
-            course.getCourseId(), course.getGroupId()))
-        .map(course -> new AssignmentRequest(course.getCourseId(), course.getGroupId()))
-        .doOnError(error -> log.error("Error getting assignment request for course id {}: {}",
-            id, error.getMessage()))
+        .map(course -> Tuples.of(course.getCourseName(),
+            new AssignmentRequest(course.getCourseId(), course.getGroupId())))
         .onErrorResume(error -> {
-          log.warn("Skipping course id {} due to error", id);
+          log.warn("Skipping course id {} due to error: {}", id, error.getMessage());
           return Mono.empty();
         });
   }
 }
+

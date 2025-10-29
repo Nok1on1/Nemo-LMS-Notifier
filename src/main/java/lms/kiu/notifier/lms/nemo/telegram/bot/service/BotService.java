@@ -5,8 +5,12 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import lms.kiu.notifier.lms.nemo.lms.model.messages.AnnouncementMessage;
+import lms.kiu.notifier.lms.nemo.lms.model.messages.AssignmentMessage;
+import lms.kiu.notifier.lms.nemo.lms.service.LMSService;
 import lms.kiu.notifier.lms.nemo.mongo.model.Student;
 import lms.kiu.notifier.lms.nemo.mongo.service.CourseService;
 import lms.kiu.notifier.lms.nemo.mongo.service.StudentService;
@@ -17,12 +21,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.stereotype.Service;
+import org.telegram.telegrambots.abilitybots.api.bot.AbilityBot;
 import org.telegram.telegrambots.abilitybots.api.sender.SilentSender;
 import org.telegram.telegrambots.meta.api.methods.GetFile;
 import org.telegram.telegrambots.meta.api.methods.send.SendChatAction;
 import org.telegram.telegrambots.meta.api.objects.File;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @Service
@@ -32,6 +38,7 @@ public class BotService {
   private final StudentService studentService;
   private final CourseService courseService;
   private final TextEncryptor textEncryptor;
+  private final LMSService lmsService;
 
   /**
    * Initializes a student's enrolled courses asynchronously using Playwright automation.
@@ -48,9 +55,9 @@ public class BotService {
    * Shows typing indicator to user during processing. If student not found,
    * sends registration instructions and returns empty set.
    *
-   * @param chatId Telegram chat ID of the student
+   * @param chatId         Telegram chat ID of the student
    * @param telegramClient client for sending Telegram messages
-   * @param silent sender for non-intrusive messages
+   * @param silent         sender for non-intrusive messages
    * @return CompletableFuture containing set of initialized course names
    */
   @Async
@@ -71,7 +78,6 @@ public class BotService {
     Student student = studentService
         .findByTelegramId(chatId)
         .block();
-
 
     if (student == null) {
       log.warn("Student not found for chatId: {}", chatId);
@@ -106,12 +112,12 @@ public class BotService {
    *   <li>Returns registration result</li>
    * </ol>
    *
-   * @param chatId Telegram chat ID of the student
-   * @param fileId Telegram file ID of the uploaded token file
+   * @param chatId         Telegram chat ID of the student
+   * @param fileId         Telegram file ID of the uploaded token file
    * @param telegramClient client for downloading files from Telegram
    * @return CompletableFuture containing registration result with success/failure message
    * @throws TelegramApiException if file download fails
-   * @throws IOException if file reading fails
+   * @throws IOException          if file reading fails
    */
   @Async("asyncTelegramBot")
   public CompletableFuture<RegistrationResult> processRegistrationAsync(Long chatId,
@@ -123,7 +129,6 @@ public class BotService {
     File getFile = telegramClient.execute(new GetFile(fileId));
     java.io.File file = telegramClient.downloadFile(getFile);
     String encryptedToken = textEncryptor.encrypt(Files.readString(file.toPath()).trim());
-
 
     Student student = Student.builder()
         .telegramId(chatId)
@@ -142,6 +147,45 @@ public class BotService {
           }
           return result;
         });
+  }
+
+  @Async
+  public CompletableFuture<Student> sendNews(AbilityBot kiuNemoBot, long telegramId) {
+    kiuNemoBot.getSilent().send("Sending check requests...", telegramId);
+
+    return Mono.zip(
+            Mono.fromFuture(() -> lmsService.checkNewAssignments(telegramId)),
+            Mono.fromFuture(() -> lmsService.checkNewAnnouncements(telegramId))
+        )
+        .flatMap(tuple -> {
+          List<AssignmentMessage> assignments = tuple.getT1();
+          List<AnnouncementMessage> announcements = tuple.getT2();
+
+          if (assignments.isEmpty()) {
+            kiuNemoBot.getSilent().send("No new assignments", telegramId);
+          } else {
+            for (var assignment : assignments) {
+              kiuNemoBot.getSilent().send(assignment.toString(), telegramId);
+            }
+
+          }
+
+          if (announcements.isEmpty()) {
+            kiuNemoBot.getSilent().send("No new announcements", telegramId);
+          } else {
+            for (var announcement : announcements) {
+              kiuNemoBot.getSilent().send(announcement.toString(), telegramId);
+            }
+          }
+
+          return studentService.updateLastCheck(telegramId);
+        })
+        .onErrorResume(ex -> {
+          log.error("Error checking news for chatId: {}", telegramId);
+          kiuNemoBot.getSilent().send("Failed to check news. Please try again later.",
+              telegramId);
+          return Mono.empty();
+        }).toFuture();
   }
 
   @Getter
