@@ -1,5 +1,6 @@
 package lms.kiu.notifier.lms.nemo.telegram.bot;
 
+import static lms.kiu.notifier.lms.nemo.data.Constants.ABOUT_MESSAGE;
 import static lms.kiu.notifier.lms.nemo.data.Constants.HELP_MESSAGE;
 import static lms.kiu.notifier.lms.nemo.data.Constants.REGISTRATION_HELPER_MESSAGE;
 import static lms.kiu.notifier.lms.nemo.data.Constants.WELCOME_MESSAGE;
@@ -55,17 +56,15 @@ public class KiuNemoBot extends AbilityBot {
 
   private final TelegramClient telegramClient;
   private final BotService botService;
-  private final LMSService lmsService;
 
   public KiuNemoBot(
       TelegramClient telegramClient,
       String botUsername,
-      BotService botService, LMSService lmsService) {
+      BotService botService) {
 
     super(telegramClient, botUsername);
     this.telegramClient = telegramClient;
     this.botService = botService;
-    this.lmsService = lmsService;
   }
 
   public Ability start() {
@@ -74,9 +73,16 @@ public class KiuNemoBot extends AbilityBot {
         .info("Start the bot and view instructions")
         .privacy(PUBLIC)
         .locality(ALL)
-        .action(ctx -> {
-          silent.send(WELCOME_MESSAGE, ctx.chatId());
-        })
+        .action(ctx -> silent.send(WELCOME_MESSAGE, ctx.chatId()))
+        .build();
+  }
+
+  public Ability about() {
+    return Ability.builder()
+        .name("about")
+        .privacy(PUBLIC)
+        .locality(ALL)
+        .action(ctx -> silent.send(ABOUT_MESSAGE, ctx.chatId()))
         .build();
   }
 
@@ -158,9 +164,7 @@ public class KiuNemoBot extends AbilityBot {
 
       try {
         botService.processRegistrationAsync(chatId, fileId, bot.getTelegramClient())
-            .thenAccept(result -> {
-              silent.send(result.getMessage(), chatId);
-            })
+            .thenAccept(result -> silent.send(result.getMessage(), chatId))
             .exceptionally(ex -> {
               log.error("Error in async registration", ex);
               silent.send("Registration failed. Please try again.", chatId);
@@ -231,42 +235,9 @@ public class KiuNemoBot extends AbilityBot {
         .info("checks all of the courses' Announcements and Assignments")
         .locality(ALL)
         .privacy(PUBLIC)
-        .action(ctx -> {
-          Long chatId = ctx.chatId();
-
-          silent.send("Sending check requests...", chatId);
-
-          lmsService.checkNewAnnouncements(chatId).thenAccept(announcementList -> {
-            if (announcementList.isEmpty()) {
-              silent.send("no new Announcements", chatId);
-            }
-            for (var announcementMessage : announcementList) {
-              silent.send(announcementMessage.toString(), chatId);
-            }
-          }).exceptionally(ex -> {
-            {
-              log.error("Error checking news for chatId: {}", chatId, ex);
-              silent.send("Failed to check news. Please try again later.", chatId);
-              return null;
-            }
-          });
-
-          lmsService.checkNewAssignments(chatId).thenAccept(assignmentList -> {
-            if (assignmentList.isEmpty()) {
-              silent.send("no new Assignments", chatId);
-            }
-            for (var assignment : assignmentList) {
-              silent.send(assignment.toString(), chatId);
-            }
-          }).exceptionally(ex -> {
-            {
-              log.error("Error checking assignment for chatId: {}", chatId, ex);
-              silent.send("Failed to check news. Please try again later.", chatId);
-              return null;
-            }
-          });
-
-        }).build();
+        .action(ctx ->
+            botService.sendNews(this, ctx.chatId())
+        ).build();
   }
 
   @NotNull
