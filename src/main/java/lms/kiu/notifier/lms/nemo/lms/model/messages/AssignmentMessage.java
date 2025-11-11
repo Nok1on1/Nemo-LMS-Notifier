@@ -40,15 +40,16 @@ public class AssignmentMessage {
     public AssignmentMessageBuilder description(String description) {
       if (description != null) {
         this.description = cropMessage(Jsoup.parse(description).wholeText(), 3000);
-      } else {
-        this.description = "";
       }
 
       return this;
     }
 
     public AssignmentMessageBuilder title(String title) {
-      this.title = cropMessage(title, 3000);
+      if (title != null) {
+        this.title = cropMessage(title, 3000);
+      }
+
       return this;
     }
   }

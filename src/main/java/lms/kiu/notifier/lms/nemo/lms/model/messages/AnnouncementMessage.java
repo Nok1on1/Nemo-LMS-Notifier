@@ -13,6 +13,7 @@ import org.jsoup.Jsoup;
 public class AnnouncementMessage {
 
   private String url;
+  private String courseName;
   private String message;
   private LocalDateTime time;
 
@@ -20,11 +21,12 @@ public class AnnouncementMessage {
   public String toString() {
     return String.format("""
         Post:
+         courseName: %s
          time: %s
          url: %s
          message:
           %s
-        """, time.toLocalDate(), url, message);
+        """, courseName, time.toLocalDate(), url, message);
   }
 
   public static class AnnouncementMessageBuilder {

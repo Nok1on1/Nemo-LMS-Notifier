@@ -11,7 +11,7 @@ public class Constants {
   //    　　　　　                           ゜｡ﾟﾟ･｡･ﾟﾟ。
   //    　　　　                            　ﾟ。　 　｡ﾟ
   //                                         　ﾟ･｡･ﾟ
-  public static final long PLAYWRIGHT_THREAD_SLEEP_TIME = 800L;
+  public static final long PLAYWRIGHT_THREAD_SLEEP_TIME = 1000L;
   public static final String MAIN_URL = "https://lms.kiu.edu.ge";
 
 

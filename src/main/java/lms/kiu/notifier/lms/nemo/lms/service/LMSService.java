@@ -72,6 +72,7 @@ public class LMSService {
             .flatMap(res -> Flux.fromIterable(res.getData()))
             .filter(data -> data.getUpdatedAt().isAfter(student.getLastCheck()))
             .map(data -> AnnouncementMessage.builder()
+                .courseName(data.getCourseGroup().getName())
                 .url(data.getCourseGroup().getListId(), data.getCourseGroup().getId())
                 .time(data.getUpdatedAt())
                 .message(data.getTitle()).build()).collectList().toFuture();
