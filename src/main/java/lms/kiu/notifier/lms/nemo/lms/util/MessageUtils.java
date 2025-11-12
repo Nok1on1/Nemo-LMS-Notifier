@@ -3,8 +3,11 @@ package lms.kiu.notifier.lms.nemo.lms.util;
 public class MessageUtils {
 
   public static String cropMessage(String message, int charLimit) {
-    if (message == null || message.length() <= charLimit) {
+    if (message == null) {
       return "";
+    }
+    if (message.length() <= charLimit) {
+      return message.trim();
     }
 
     String oddlyCut = message.substring(0, charLimit);

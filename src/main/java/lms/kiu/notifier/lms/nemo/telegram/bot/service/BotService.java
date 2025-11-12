@@ -1,13 +1,16 @@
 package lms.kiu.notifier.lms.nemo.telegram.bot.service;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static lms.kiu.notifier.lms.nemo.data.Constants.INVALID_TIME_PERIOD;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import lms.kiu.notifier.lms.nemo.data.Constants;
 import lms.kiu.notifier.lms.nemo.lms.model.messages.AnnouncementMessage;
 import lms.kiu.notifier.lms.nemo.lms.model.messages.AssignmentMessage;
 import lms.kiu.notifier.lms.nemo.lms.service.LMSService;
@@ -61,10 +64,8 @@ public class BotService {
    * @return CompletableFuture containing set of initialized course names
    */
   @Async
-  public CompletableFuture<Set<String>> initializeStudentAsync(
-      Long chatId,
-      TelegramClient telegramClient,
-      SilentSender silent) {
+  public CompletableFuture<Set<String>> initializeStudentAsync(Long chatId,
+      TelegramClient telegramClient, SilentSender silent) {
 
     log.info("Starting async initialization for chatId: {}", chatId);
 
@@ -75,9 +76,7 @@ public class BotService {
       log.error("Failed to send typing action", e);
     }
 
-    Student student = studentService
-        .findByTelegramId(chatId)
-        .block();
+    Student student = studentService.findByTelegramId(chatId).block();
 
     if (student == null) {
       log.warn("Student not found for chatId: {}", chatId);
@@ -112,7 +111,7 @@ public class BotService {
    *   <li>Returns registration result</li>
    * </ol>
    *
-   * @param chatId         Telegram chat ID of the student
+   * @param telegramId     Telegram chat ID of the student
    * @param fileId         Telegram file ID of the uploaded token file
    * @param telegramClient client for downloading files from Telegram
    * @return CompletableFuture containing registration result with success/failure message
@@ -120,82 +119,106 @@ public class BotService {
    * @throws IOException          if file reading fails
    */
   @Async("asyncTelegramBot")
-  public CompletableFuture<RegistrationResult> processRegistrationAsync(Long chatId,
-      String fileId, TelegramClient telegramClient)
-      throws TelegramApiException, IOException {
+  public CompletableFuture<String> processRegistrationAsync(long telegramId,
+      String fileId,
+      TelegramClient telegramClient) throws TelegramApiException, IOException {
 
-    log.info("Processing registration - chatId: {}, fileId: {}", chatId, fileId);
+    if (studentService.findByTelegramId(telegramId).block() != null) {
+      studentService.deleteStudentByTelegramId(telegramId).block();
+    }
+
+    log.info("Processing registration - chatId: {}, fileId: {}", telegramId, fileId);
 
     File getFile = telegramClient.execute(new GetFile(fileId));
     java.io.File file = telegramClient.downloadFile(getFile);
     String encryptedToken = textEncryptor.encrypt(Files.readString(file.toPath()).trim());
 
-    Student student = Student.builder()
-        .telegramId(chatId)
-        .studentToken(encryptedToken)
-        .build();
+    Student student = Student.builder().telegramId(telegramId).studentToken(encryptedToken).build();
 
-    return studentService.save(student)
-        .map(savedStudent -> {
-          log.info("Student registered successfully for chatId: {}", savedStudent.getTelegramId());
-          return new RegistrationResult("✅ Registration successful!");
-        })
-        .toFuture()
-        .thenApply(result -> {
-          if (result == null) {
-            throw new IllegalStateException("Failed to save student data.");
-          }
-          return result;
-        });
+    return studentService.save(student).map(savedStudent -> {
+      log.info("Student registered successfully for chatId: {}", savedStudent.getTelegramId());
+      return "✅ Registration successful!";
+    }).toFuture().thenApply(result -> {
+      if (result == null) {
+        throw new IllegalStateException("Failed to save student data.");
+      }
+      return result;
+    });
   }
 
   @Async
   public CompletableFuture<Student> sendNews(AbilityBot kiuNemoBot, long telegramId) {
     kiuNemoBot.getSilent().send("Sending check requests...", telegramId);
 
-    return Mono.zip(
-            Mono.fromFuture(() -> lmsService.checkNewAssignments(telegramId)),
-            Mono.fromFuture(() -> lmsService.checkNewAnnouncements(telegramId))
-        )
-        .flatMap(tuple -> {
-          List<AssignmentMessage> assignments = tuple.getT1();
-          List<AnnouncementMessage> announcements = tuple.getT2();
+    return Mono.zip(Mono.fromFuture(() -> lmsService.checkNewAssignments(telegramId)),
+        Mono.fromFuture(() -> lmsService.checkNewAnnouncements(telegramId))).flatMap(tuple -> {
+      List<AssignmentMessage> assignments = tuple.getT1();
+      List<AnnouncementMessage> announcements = tuple.getT2();
 
-          if (assignments.isEmpty()) {
-            kiuNemoBot.getSilent().send("No new assignments", telegramId);
-          } else {
-            for (var assignment : assignments) {
-              kiuNemoBot.getSilent().send(assignment.toString(), telegramId);
-            }
+      if (assignments.isEmpty()) {
+        kiuNemoBot.getSilent().send("No new assignments", telegramId);
+      } else {
+        for (var assignment : assignments) {
+          kiuNemoBot.getSilent().send(assignment.toString(), telegramId);
+        }
 
-          }
+      }
 
-          if (announcements.isEmpty()) {
-            kiuNemoBot.getSilent().send("No new announcements", telegramId);
-          } else {
-            for (var announcement : announcements) {
-              kiuNemoBot.getSilent().send(announcement.toString(), telegramId);
-            }
-          }
+      if (announcements.isEmpty()) {
+        kiuNemoBot.getSilent().send("No new announcements", telegramId);
+      } else {
+        for (var announcement : announcements) {
+          kiuNemoBot.getSilent().send(announcement.toString(), telegramId);
+        }
+      }
 
-          return studentService.updateLastCheck(telegramId);
-        })
-        .onErrorResume(ex -> {
-          log.error("Error checking news for chatId: {}", telegramId);
-          kiuNemoBot.getSilent().send("Failed to check news. Please try again later.",
-              telegramId);
-          return Mono.empty();
-        }).toFuture();
+      return studentService.updateLastCheck(telegramId);
+    }).onErrorResume(ex -> {
+      log.error("Error checking news for chatId: {}", telegramId);
+      kiuNemoBot.getSilent().send(Constants.FAILED_CHECKING_NEWS, telegramId);
+      return Mono.empty();
+    }).toFuture();
   }
 
-  @Getter
-  public static class RegistrationResult {
+  @Async
+  public void rewindLastCheck(AbilityBot kiuNemoBot, long telegramId, String timePeriodNum,
+      String timeUnit) {
+    long rewindDays;
 
-    private final String message;
-
-    public RegistrationResult(String message) {
-      this.message = message;
+    try {
+      rewindDays = Long.parseLong(timePeriodNum);
+    } catch (NumberFormatException e) {
+      kiuNemoBot.getSilent()
+          .send(INVALID_TIME_PERIOD,
+              telegramId);
+      return;
     }
 
+    switch (timeUnit.toLowerCase()) {
+      case "months" -> rewindDays *= 30;
+      case "weeks" -> rewindDays *= 7;
+      case "days" -> {
+      }
+      case "hours" -> rewindDays /= 24;
+      default -> {
+        kiuNemoBot.getSilent()
+            .send(Constants.INVALID_TIME_UNIT, telegramId);
+        return;
+      }
+    }
+
+    if (rewindDays <= 0) {
+      kiuNemoBot.getSilent()
+          .send(Constants.NEGATIVE_TIME_PERIOD_ERROR, telegramId);
+      return;
+    }
+
+    LocalDateTime timeRewind = LocalDateTime.now().minusDays(rewindDays);
+    studentService.modifyLastCheck(telegramId, timeRewind).block();
+
+    kiuNemoBot.getSilent()
+        .send(String.format("✅ Last check rewinded by %d %s\n" +
+                "📅 Current last check: %s",
+            rewindDays, "days", timeRewind), telegramId);
   }
 }

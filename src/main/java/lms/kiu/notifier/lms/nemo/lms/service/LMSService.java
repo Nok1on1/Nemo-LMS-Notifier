@@ -1,7 +1,10 @@
 package lms.kiu.notifier.lms.nemo.lms.service;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import lms.kiu.notifier.lms.nemo.data.Constants;
 import lms.kiu.notifier.lms.nemo.lms.model.messages.AnnouncementMessage;
 import lms.kiu.notifier.lms.nemo.lms.model.messages.AssignmentMessage;
@@ -91,19 +94,19 @@ public class LMSService {
     return Flux.fromIterable(
             student.getEnrolledCourseIds())
         .flatMap(
-            courseService::getAssignmentRequestAndCourseName)
-        .flatMap(tuple ->
+            courseService::getCourseNameAndAssignmentRequest)
+        .flatMap(CourseNameAndRequest ->
             webClient.post()
                 .uri("student/lms/learningCourses/group/getAssignmentList")
                 .header("Authorization", "Bearer " + studentToken)
-                .bodyValue(tuple.getT2())
+                .bodyValue(CourseNameAndRequest.getT2())
                 .retrieve()
                 .bodyToFlux(AssignmentResponse.class)
                 .flatMap(
                     res -> Flux.fromIterable(res.getData())
                         .filter(data -> data.getUpdatedAt().isAfter(student.getLastCheck()))
                         .map(dataItem -> AssignmentMessage.builder()
-                            .courseName(tuple.getT1())
+                            .courseName(CourseNameAndRequest.getT1())
                             .endDate(dataItem.getEndDate())
                             .title(dataItem.getTitle())
                             .embeddedFileLinks(dataItem.getFileUrls())
@@ -111,6 +114,4 @@ public class LMSService {
                 )
         ).collectList().toFuture();
   }
-
-
 }

@@ -21,9 +21,9 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Abstract base class for Playwright-based LMS automation.
  * <p>
- * Manages browser lifecycle, authentication, and provides navigation step objects
- * for interacting with the LMS system. Subclasses implement specific automation workflows
- * using the initialized Playwright components.
+ * Manages browser lifecycle, authentication, and provides navigation step objects for interacting
+ * with the LMS system. Subclasses implement specific automation workflows using the initialized
+ * Playwright components.
  */
 @Slf4j
 public abstract class InitPlaywright {
@@ -61,7 +61,7 @@ public abstract class InitPlaywright {
       playwright = Playwright.create();
 
       browser = playwright.chromium()
-          .launch(new LaunchOptions().setHeadless(false).setTimeout(6000));
+          .launch(new LaunchOptions().setHeadless(true).setTimeout(6000));
 
       browserContext = browser.newContext();
       page = browserContext.newPage();

@@ -24,32 +24,36 @@ public class AssignmentMessage {
 
   @Override
   public String toString() {
-    return String.format("""
-        Assignment:
-          end Date: %s
-          courseName: %s
-          title: %s
-          description:
-            %s
-          embeddedFileLinks: %s
-        """, endDate.toString(), courseName, title, description, embeddedFileLinks);
+    StringBuilder sb = new StringBuilder("Assignment:\n");
+
+    if (endDate != null) {
+      sb.append("  endDate: ").append(endDate).append("\n");
+    }
+    if (courseName != null) {
+      sb.append("  courseName: ").append(courseName).append("\n");
+    }
+    if (title != null) {
+      sb.append("  title: ").append(title).append("\n");
+    }
+    if (description != null) {
+      sb.append("  description:\n    ").append(description).append("\n");
+    }
+    if (embeddedFileLinks != null && !embeddedFileLinks.isEmpty()) {
+      sb.append("  embeddedFileLinks: ").append(embeddedFileLinks).append("\n");
+    }
+    return sb.toString();
   }
+
 
   public static class AssignmentMessageBuilder {
 
     public AssignmentMessageBuilder description(String description) {
-      if (description != null) {
-        this.description = cropMessage(Jsoup.parse(description).wholeText(), 3000);
-      }
-
+      this.description = cropMessage(Jsoup.parse(description).wholeText(), 3000);
       return this;
     }
 
     public AssignmentMessageBuilder title(String title) {
-      if (title != null) {
-        this.title = cropMessage(title, 3000);
-      }
-
+      this.title = cropMessage(title, 3000);
       return this;
     }
   }
