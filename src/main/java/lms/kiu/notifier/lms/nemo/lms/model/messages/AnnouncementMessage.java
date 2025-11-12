@@ -19,15 +19,24 @@ public class AnnouncementMessage {
 
   @Override
   public String toString() {
-    return String.format("""
-        Post:
-         courseName: %s
-         time: %s
-         url: %s
-         message:
-          %s
-        """, courseName, time.toLocalDate(), url, message);
+    StringBuilder sb = new StringBuilder("Post:\n");
+
+    if (courseName != null) {
+      sb.append("  courseName: ").append(courseName).append("\n");
+    }
+    if (time != null) {
+      sb.append("  time: ").append(time.toLocalDate()).append("\n");
+    }
+    if (url != null) {
+      sb.append("  url: ").append(url).append("\n");
+    }
+    if (message != null) {
+      sb.append("  message:\n    ").append(message).append("\n");
+    }
+
+    return sb.toString();
   }
+
 
   public static class AnnouncementMessageBuilder {
 

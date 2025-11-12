@@ -13,4 +13,6 @@ public interface StudentRepository extends ReactiveMongoRepository<Student, Stri
   Mono<Student> findByTelegramId(Long telegramId);
 
   Flux<Student> findStudentsByLastCheckBefore(LocalDateTime lastCheckBefore);
+
+  Mono<Void> deleteStudentByTelegramId(Long telegramId);
 }

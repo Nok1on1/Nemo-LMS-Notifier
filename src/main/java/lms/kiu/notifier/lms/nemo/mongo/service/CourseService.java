@@ -41,7 +41,7 @@ public class CourseService {
         });
   }
 
-  public Mono<Tuple2<String, AssignmentRequest>> getAssignmentRequestAndCourseName(String id) {
+  public Mono<Tuple2<String, AssignmentRequest>> getCourseNameAndAssignmentRequest(String id) {
     return findCourseById(id)
         .map(course -> Tuples.of(course.getCourseName(),
             new AssignmentRequest(course.getCourseId(), course.getGroupId())))

@@ -113,18 +113,26 @@ public class KiuNemoBot extends AbilityBot {
   public ReplyFlow registrationFlow() {
     return ReplyFlow.builder(db)
         .action((bot, upd) -> {
-          InputStream imageStream = getClass().getResourceAsStream("/copyToken.png");
+          InputStream imageStream = getClass().getResourceAsStream("/CopyToken.png");
 
-          SendPhoto sendPhoto = SendPhoto.builder()
-              .chatId(upd.getMessage().getChatId().toString())
-              .photo(new InputFile(imageStream, "copyToken.png"))
-              .caption(REGISTRATION_HELPER_MESSAGE)
-              .build();
-
-          try {
-            bot.getTelegramClient().execute(sendPhoto);
-          } catch (TelegramApiException e) {
-            silent.send("failed to fetch photo", upd.getMessage().getChatId());
+          try (imageStream) {
+            try {
+              if (imageStream == null) {
+                silent.send("Could not load registration instructions",
+                    upd.getMessage().getChatId());
+                return;
+              }
+              SendPhoto sendPhoto = SendPhoto.builder()
+                  .chatId(upd.getMessage().getChatId().toString())
+                  .photo(new InputFile(imageStream, "copyToken.png"))
+                  .caption(REGISTRATION_HELPER_MESSAGE)
+                  .build();
+              bot.getTelegramClient().execute(sendPhoto);
+            } catch (TelegramApiException e) {
+              silent.send("failed to fetch photo", upd.getMessage().getChatId());
+            }
+          } catch (IOException e) {
+            log.error("Error closing image stream", e);
           }
         })
         .onlyIf(hasMessageWith("register token"))
@@ -164,7 +172,7 @@ public class KiuNemoBot extends AbilityBot {
 
       try {
         botService.processRegistrationAsync(chatId, fileId, bot.getTelegramClient())
-            .thenAccept(result -> silent.send(result.getMessage(), chatId))
+            .thenAccept(result -> silent.send(result, chatId))
             .exceptionally(ex -> {
               log.error("Error in async registration", ex);
               silent.send("Registration failed. Please try again.", chatId);
@@ -208,7 +216,12 @@ public class KiuNemoBot extends AbilityBot {
           botService.initializeStudentAsync(chatId, telegramClient, silent)
               .thenAccept(courseNames -> {
                 if (!courseNames.isEmpty()) {
-                  silent.send(String.format("Courses Added: %s", courseNames.toString()), chatId);
+                  StringBuilder sb = new StringBuilder();
+                  for (var course : courseNames) {
+                    sb.append(course).append("\n");
+                  }
+
+                  silent.send(String.format("Courses Added:\n%s", sb), chatId);
                 }
               })
               .exceptionally(ex -> {
@@ -230,7 +243,7 @@ public class KiuNemoBot extends AbilityBot {
    *
    * @return Ability configuration for checking news
    */
-  public Ability check_news() {
+  public Ability checkNews() {
     return Ability.builder().name("check_news")
         .info("checks all of the courses' Announcements and Assignments")
         .locality(ALL)
@@ -238,6 +251,21 @@ public class KiuNemoBot extends AbilityBot {
         .action(ctx ->
             botService.sendNews(this, ctx.chatId())
         ).build();
+  }
+
+  public Ability checkNewsRewind() {
+    return Ability.builder().name("check_news_from")
+        .info(
+            "Get news from a specific time period in the past.\nUsage: /check_news_from <number> <hours|days|weeks|months>\nExample: /check_news_from 2 days")
+        .locality(ALL)
+        .input(2)
+        .privacy(PUBLIC)
+        .action(
+            ctx -> {
+              botService.rewindLastCheck(this, ctx.chatId(), ctx.firstArg(), ctx.secondArg());
+              botService.sendNews(this, ctx.chatId());
+            })
+        .build();
   }
 
   @NotNull

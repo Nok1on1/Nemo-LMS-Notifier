@@ -57,6 +57,15 @@ public class StudentService {
         Student.class);
   }
 
+  public Mono<Student> modifyLastCheck(Long telegramId, LocalDateTime lastCheck) {
+    Query query = new Query(Criteria.where("telegramId").is(telegramId));
+
+    Update update = new Update().set("lastCheck", lastCheck);
+
+    return template.findAndModify(query, update, FindAndModifyOptions.options().returnNew(true),
+        Student.class);
+  }
+
   public Mono<Student> addCourse(Long telegramId, Course courseData) {
     Query query = new Query(Criteria.where("telegramId").is(telegramId));
 
@@ -71,7 +80,11 @@ public class StudentService {
   }
 
 
-  public Flux<Student> findStudentsByLastCheckBefore(LocalDateTime lastCheckBefore){
+  public Flux<Student> findStudentsByLastCheckBefore(LocalDateTime lastCheckBefore) {
     return repo.findStudentsByLastCheckBefore(lastCheckBefore);
+  }
+
+  public Mono<Void> deleteStudentByTelegramId(Long telegramId) {
+    return repo.deleteStudentByTelegramId(telegramId);
   }
 }

@@ -56,7 +56,7 @@ public class Constants {
       📋 How to get your Student Token:
       
       1️⃣ Go to https://lms.kiu.edu.ge and make sure you're logged in
-      2️⃣ Open browser DevTools (F12)
+      2️⃣ Open browser DevTools (F12) or right click with mouse and choose "Inspect"
       3️⃣ Go to Application/Storage tab
       4️⃣ Find LocalStorage → lms.kiu.edu.ge
       5️⃣ Copy the "Student-Token" value
@@ -99,4 +99,13 @@ public class Constants {
       👀 Fun fact:
       Finding LMS updates is like finding Nemo. 🐠
       """;
+  public static final String INVALID_TIME_PERIOD = "⚠️ Invalid number format. Please enter a valid number for the time period.";
+  public static final String INVALID_TIME_UNIT =
+      "❌ Invalid time unit. Please use one of the following:\n" +
+          "• hours" +
+          "• days\n" +
+          "• weeks\n" +
+          "• months\n";
+  public static final String NEGATIVE_TIME_PERIOD_ERROR = "❌ The time period must be greater than 0.";
+  public static final String FAILED_CHECKING_NEWS = "Failed to check news. Please try again later.";
 }
