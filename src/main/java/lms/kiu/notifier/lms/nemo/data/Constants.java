@@ -1,5 +1,9 @@
 package lms.kiu.notifier.lms.nemo.data;
 
+import java.net.URI;
+import java.util.function.Function;
+import org.springframework.web.util.UriBuilder;
+
 public class Constants {
 
   // Playwright was acting tuff so I made it Alpha Sub ٩◔̯◔۶
@@ -108,4 +112,6 @@ public class Constants {
           "• months\n";
   public static final String NEGATIVE_TIME_PERIOD_ERROR = "❌ The time period must be greater than 0.";
   public static final String FAILED_CHECKING_NEWS = "Failed to check news. Please try again later.";
+  public static final String ASSIGNMENT_LIST_URL_PATH = "student/lms/learningCourses/group/getAssignmentList";
+  public static final String ANNOUNCEMENT_LIST_URL_PATH = "student/lms/learningCourses/group/announcementList";
 }

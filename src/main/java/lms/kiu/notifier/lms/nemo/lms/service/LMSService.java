@@ -43,75 +43,68 @@ public class LMSService {
       .build();
 
 
-  @Async
-  public CompletableFuture<List<AnnouncementMessage>> checkNewAnnouncements(Long telegramId) {
+  public Flux<AnnouncementMessage> checkNewAnnouncements(Long telegramId) {
+    return studentService.findByTelegramId(telegramId)
+        .flatMapMany(student -> {
+          if (student == null) {
+            return Flux.empty();
+          }
 
-    Student student = studentService.findByTelegramId(telegramId).block();
+          String studentToken = textEncryptor.decrypt(student.getStudentToken());
 
-    if (student == null) {
-      return CompletableFuture.completedFuture(null);
-    }
-
-    String studentToken = textEncryptor.decrypt(student.getStudentToken());
-
-    return
-        Flux.fromIterable(student.getEnrolledCourseIds())
-            .flatMap(courseService::getAnnouncementRequest)
-            .flatMap(courseRequest ->
-                webClient.post()
-                    .uri("student/lms/learningCourses/group/announcementList")
-                    .header("Authorization", "Bearer " + studentToken)
-                    .bodyValue(courseRequest)
-                    .retrieve()
-                    .onStatus(HttpStatusCode::is5xxServerError,
-                        response -> response.bodyToMono(String.class)
-                            .doOnNext(body -> log.error("Server error for announcements: {}", body))
-                            .then(Mono.error(new RuntimeException("Server returned 500 error"))))
-                    .bodyToFlux(AnnouncementResponse.class)
-                    .onErrorResume(error -> {
-                      log.error("Error fetching announcements for course: {}", error.getMessage());
-                      return Flux.empty();
-                    }))
-            .flatMap(res -> Flux.fromIterable(res.getData()))
-            .filter(data -> data.getUpdatedAt().isAfter(student.getLastCheck()))
-            .map(data -> AnnouncementMessage.builder()
-                .courseName(data.getCourseGroup().getName())
-                .url(data.getCourseGroup().getListId(), data.getCourseGroup().getId())
-                .time(data.getUpdatedAt())
-                .message(data.getTitle()).build()).collectList().toFuture();
+          return Flux.fromIterable(student.getEnrolledCourseIds())
+              .flatMap(courseService::getAnnouncementRequest)
+              .flatMap(courseRequest ->
+                  webClient.post()
+                      .uri(Constants.ANNOUNCEMENT_LIST_URL_PATH)
+                      .header("Authorization", "Bearer " + studentToken)
+                      .bodyValue(courseRequest)
+                      .retrieve()
+                      .bodyToFlux(AnnouncementResponse.class)
+                      .onErrorResume(error -> {
+                        log.error("Error fetching announcements: {}", error.getMessage());
+                        return Flux.empty();
+                      })
+              )
+              .flatMap(res -> Flux.fromIterable(res.getData()))
+              .filter(data -> data.getUpdatedAt().isAfter(student.getLastCheck()))
+              .map(data -> AnnouncementMessage.builder()
+                  .courseName(data.getCourseGroup().getName())
+                  .url(data.getCourseGroup().getListId(), data.getCourseGroup().getId())
+                  .time(data.getUpdatedAt())
+                  .message(data.getTitle())
+                  .build()
+              );
+        });
   }
 
+
   @Async
-  public CompletableFuture<List<AssignmentMessage>> checkNewAssignments(Long telegramId) {
-    Student student = studentService.findByTelegramId(telegramId).block();
+  public Flux<AssignmentMessage> checkNewAssignments(Long telegramId) {
+    return studentService.findByTelegramId(telegramId)
+        .flatMapMany(student -> {
+          String studentToken = textEncryptor.decrypt(student.getStudentToken());
 
-    if (student == null) {
-      return CompletableFuture.completedFuture(null);
-    }
-
-    String studentToken = textEncryptor.decrypt(student.getStudentToken());
-
-    return Flux.fromIterable(
-            student.getEnrolledCourseIds())
-        .flatMap(
-            courseService::getCourseNameAndAssignmentRequest)
-        .flatMap(CourseNameAndRequest ->
-            webClient.post()
-                .uri("student/lms/learningCourses/group/getAssignmentList")
-                .header("Authorization", "Bearer " + studentToken)
-                .bodyValue(CourseNameAndRequest.getT2())
-                .retrieve()
-                .bodyToFlux(AssignmentResponse.class)
-                .flatMap(
-                    res -> Flux.fromIterable(res.getData())
-                        .filter(data -> data.getUpdatedAt().isAfter(student.getLastCheck()))
-                        .map(dataItem -> AssignmentMessage.builder()
-                            .courseName(CourseNameAndRequest.getT1())
-                            .endDate(dataItem.getEndDate())
-                            .title(dataItem.getTitle())
-                            .embeddedFileLinks(dataItem.getFileUrls())
-                            .build())
-                )
-        ).collectList().toFuture();
+          return Flux.fromIterable(student.getEnrolledCourseIds())
+              .flatMap(courseService::getCourseNameAndAssignmentRequest)
+              .flatMap(courseAndRequest ->
+                  webClient.post()
+                      .uri(Constants.ASSIGNMENT_LIST_URL_PATH)
+                      .header("Authorization", "Bearer " + studentToken)
+                      .bodyValue(courseAndRequest.getT2())
+                      .retrieve()
+                      .bodyToFlux(AssignmentResponse.class)
+                      .flatMap(res -> Flux.fromIterable(res.getData())
+                          .filter(data -> data.getUpdatedAt().isAfter(student.getLastCheck()))
+                          .map(dataItem -> AssignmentMessage.builder()
+                              .courseName(courseAndRequest.getT1())
+                              .endDate(dataItem.getEndDate())
+                              .title(dataItem.getTitle())
+                              .embeddedFileLinks(dataItem.getFileUrls())
+                              .build())
+                      )
+              );
+        });
   }
+
 }

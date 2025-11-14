@@ -20,11 +20,11 @@ import reactor.core.publisher.Mono;
 /**
  * Handles student initialization by traversing LMS course structure via Playwright automation.
  * <p>
- * This class extends {@link InitPlaywright} to leverage browser automation capabilities
- * for extracting and persisting student course enrollments from the LMS system.
+ * This class extends {@link InitPlaywright} to leverage browser automation capabilities for
+ * extracting and persisting student course enrollments from the LMS system.
  * <p>
- * The initialization process performs a depth-first traversal of the LMS hierarchy,
- * intercepting API requests to capture course metadata and storing it in the database.
+ * The initialization process performs a depth-first traversal of the LMS hierarchy, intercepting
+ * API requests to capture course metadata and storing it in the database.
  *
  * @see InitPlaywright
  */
@@ -43,8 +43,8 @@ public class StudentInitializer extends InitPlaywright {
   /**
    * Initializes student by traversing LMS course structure and extracting course data.
    * <p>
-   * Performs depth-first traversal through the LMS hierarchy:
-   * LMS → Course → Subsection → Interaction.
+   * Performs depth-first traversal through the LMS hierarchy: LMS → Course → Subsection →
+   * Interaction.
    * <p>
    * Navigation flow:
    * <ol>
@@ -59,8 +59,8 @@ public class StudentInitializer extends InitPlaywright {
    * even if errors occur during traversal.
    *
    * @return this StudentInitializer instance for method chaining
-   * @throws RuntimeException if navigation fails or course extraction encounters errors,
-   *                          wrapping the original exception with student context
+   * @throws RuntimeException if navigation fails or course extraction encounters errors, wrapping
+   *                          the original exception with student context
    */
   public StudentInitializer initializeStudent() {
     // LMS -> Course -> Subsection -> Interaction
@@ -107,8 +107,8 @@ public class StudentInitializer extends InitPlaywright {
   /**
    * Intercepts and processes getCourse API requests to extract and persist course data.
    * <p>
-   * This method is registered as a request handler via {@link com.microsoft.playwright.Page#onRequest}.
-   * When a getCourse request is detected:
+   * This method is registered as a request handler via
+   * {@link com.microsoft.playwright.Page#onRequest}. When a getCourse request is detected:
    * <ol>
    *   <li>Extracts courseId and groupId from request parameters</li>
    *   <li>Parses course details from response body</li>
@@ -123,7 +123,6 @@ public class StudentInitializer extends InitPlaywright {
    * @param req the intercepted Playwright request object
    */
   private void handleGetCourseRequest(Request req) {
-
     if (req.url().contains("getCourse")) {
       log.info("Playwright - Retrieving getCourse request Headers");
 
@@ -134,18 +133,24 @@ public class StudentInitializer extends InitPlaywright {
 
       Course parsedCourse = parseCourseRes(req.response().text(), courseId, groupId);
 
-      courseService.findCourseByCourseIdAndGroupId(courseId, groupId)
-          .switchIfEmpty(
-              req.response().ok() ? courseService.save(
-                  parsedCourse) : Mono.empty()
-          )
-          .flatMap(c -> studentService.addCourse(student.getTelegramId(), c))
-          .doOnSuccess(s -> {
-            log.info("Added course to student {}", student.getTelegramId());
-            courseNames.add(parsedCourse.getCourseName());
-          })
-          .doOnError(e -> log.error("Failed to add course", e))
-          .block();
+      try {
+        Student updatedStudent = courseService.findCourseByCourseIdAndGroupId(courseId, groupId)
+            .switchIfEmpty(
+                req.response().ok() ? courseService.save(parsedCourse) : Mono.empty()
+            )
+            .flatMap(c -> studentService.addCourse(student.getTelegramId(), c))
+            .block();
+
+        if (updatedStudent != null) {
+          courseNames.add(parsedCourse.getCourseName());
+          log.info("Successfully added course: {}. Total: {}",
+              parsedCourse.getCourseName(), courseNames.size());
+        }
+
+      } catch (Exception e) {
+        log.error("Error processing course request for courseId: {}, groupId: {}",
+            courseId, groupId, e);
+      }
     }
   }
 }

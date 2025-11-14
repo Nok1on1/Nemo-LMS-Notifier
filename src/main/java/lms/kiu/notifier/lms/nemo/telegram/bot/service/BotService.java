@@ -2,36 +2,42 @@ package lms.kiu.notifier.lms.nemo.telegram.bot.service;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static lms.kiu.notifier.lms.nemo.data.Constants.INVALID_TIME_PERIOD;
+import static lms.kiu.notifier.lms.nemo.data.Constants.REGISTRATION_HELPER_MESSAGE;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import lms.kiu.notifier.lms.nemo.data.Constants;
-import lms.kiu.notifier.lms.nemo.lms.model.messages.AnnouncementMessage;
-import lms.kiu.notifier.lms.nemo.lms.model.messages.AssignmentMessage;
 import lms.kiu.notifier.lms.nemo.lms.service.LMSService;
 import lms.kiu.notifier.lms.nemo.mongo.model.Student;
 import lms.kiu.notifier.lms.nemo.mongo.service.CourseService;
 import lms.kiu.notifier.lms.nemo.mongo.service.StudentService;
 import lms.kiu.notifier.lms.nemo.playwright.entry.StudentInitializer;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.abilitybots.api.bot.AbilityBot;
+import org.telegram.telegrambots.abilitybots.api.bot.BaseAbilityBot;
+import org.telegram.telegrambots.abilitybots.api.objects.MessageContext;
 import org.telegram.telegrambots.abilitybots.api.sender.SilentSender;
 import org.telegram.telegrambots.meta.api.methods.GetFile;
 import org.telegram.telegrambots.meta.api.methods.send.SendChatAction;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.objects.Document;
 import org.telegram.telegrambots.meta.api.objects.File;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
+import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Slf4j
 @Service
@@ -42,6 +48,29 @@ public class BotService {
   private final CourseService courseService;
   private final TextEncryptor textEncryptor;
   private final LMSService lmsService;
+
+  @Async
+  public void sendRegistrationInstructions(BaseAbilityBot kiuNemoBot, long chatId) {
+    InputStream imageStream = getClass().getResourceAsStream("/CopyToken.png");
+
+    try (imageStream) {
+      try {
+        if (imageStream == null) {
+          kiuNemoBot.getSilent().send("Could not load registration instructions", chatId);
+          return;
+        }
+        SendPhoto sendPhoto = SendPhoto.builder().chatId(chatId)
+            .photo(new InputFile(imageStream, "copyToken.png")).caption(REGISTRATION_HELPER_MESSAGE)
+            .build();
+        kiuNemoBot.getTelegramClient().execute(sendPhoto);
+      } catch (TelegramApiException e) {
+        kiuNemoBot.getSilent().send("failed to fetch photo", chatId);
+      }
+    } catch (IOException e) {
+      log.error("Error closing image stream", e);
+    }
+  }
+
 
   /**
    * Initializes a student's enrolled courses asynchronously using Playwright automation.
@@ -58,16 +87,17 @@ public class BotService {
    * Shows typing indicator to user during processing. If student not found,
    * sends registration instructions and returns empty set.
    *
-   * @param chatId         Telegram chat ID of the student
-   * @param telegramClient client for sending Telegram messages
-   * @param silent         sender for non-intrusive messages
+   * @param ctx context given by AbilityBot Action
    * @return CompletableFuture containing set of initialized course names
    */
-  @Async
-  public CompletableFuture<Set<String>> initializeStudentAsync(Long chatId,
-      TelegramClient telegramClient, SilentSender silent) {
+  public Flux<String> initializeStudentAsync(MessageContext ctx) {
+    SilentSender silent = ctx.bot().getSilent();
+    TelegramClient telegramClient = ctx.bot().getTelegramClient();
+    Long chatId = ctx.chatId();
 
-    log.info("Starting async initialization for chatId: {}", chatId);
+    silent.send(String.format(
+        "Starting up Playwright automation Script on: %s \n this will take up to 1 minute...",
+        Constants.MAIN_URL), chatId);
 
     try {
       SendChatAction chatAction = new SendChatAction(chatId.toString(), "typing");
@@ -76,27 +106,15 @@ public class BotService {
       log.error("Failed to send typing action", e);
     }
 
-    Student student = studentService.findByTelegramId(chatId).block();
-
-    if (student == null) {
-      log.warn("Student not found for chatId: {}", chatId);
-
-      silent.send("It looks like you haven't registered yet.", chatId);
-      silent.send("type /start for instructions", chatId);
-
-      return completedFuture(new HashSet<>());
-    }
-
-    student.setStudentToken(textEncryptor.decrypt(student.getStudentToken()));
-
-    log.info("Student found: {}", student.getTelegramId());
-
-    Set<String> courseTitles = new StudentInitializer(student, studentService,
-        courseService).initializeStudent().getCourseNames();
-
-    silent.send("initialization complete!", chatId);
-
-    return completedFuture(courseTitles);
+    return studentService.findByTelegramId(chatId).switchIfEmpty(Mono.fromRunnable(() -> {
+          silent.send("It looks like you haven't registered yet.", chatId);
+          silent.send("type /start for instructions", chatId);
+        }))
+        .flatMapMany(student -> {
+          student.setStudentToken(textEncryptor.decrypt(student.getStudentToken()));
+          return Flux.fromIterable(new StudentInitializer(student, studentService,
+              courseService).initializeStudent().getCourseNames());
+        }).subscribeOn(Schedulers.boundedElastic());
   }
 
   /**
@@ -111,73 +129,57 @@ public class BotService {
    *   <li>Returns registration result</li>
    * </ol>
    *
-   * @param telegramId     Telegram chat ID of the student
-   * @param fileId         Telegram file ID of the uploaded token file
-   * @param telegramClient client for downloading files from Telegram
-   * @return CompletableFuture containing registration result with success/failure message
-   * @throws TelegramApiException if file download fails
-   * @throws IOException          if file reading fails
+   * @param bot BotInstance
+   * @param upd update from Telegram
+   * @return
    */
-  @Async("asyncTelegramBot")
-  public CompletableFuture<String> processRegistrationAsync(long telegramId,
-      String fileId,
-      TelegramClient telegramClient) throws TelegramApiException, IOException {
+  public Mono<Student> processRegistrationAsync(BaseAbilityBot bot, Update upd) {
 
-    if (studentService.findByTelegramId(telegramId).block() != null) {
-      studentService.deleteStudentByTelegramId(telegramId).block();
+    long telegramId = upd.getMessage().getChatId();
+    SilentSender silent = bot.getSilent();
+    TelegramClient telegramClient = bot.getTelegramClient();
+
+    Document document = upd.getMessage().getDocument();
+
+    String fileId = document.getFileId();
+    String fileName = document.getFileName();
+    Long fileSize = document.getFileSize();
+
+    log.info("Received file - ID: {}, Name: {}, Size: {} bytes", fileId, fileName, fileSize);
+
+    if (!fileName.endsWith(".txt")) {
+      silent.send("File is not .txt extension. Start Again!", telegramId);
+      return null;
+    }
+    if (fileSize > 10 * 1024) {
+      silent.send("File is too big for it to be a Token, stop breaking things!", telegramId);
+      return null;
     }
 
-    log.info("Processing registration - chatId: {}, fileId: {}", telegramId, fileId);
+    silent.send("Processing your registration...", telegramId);
 
-    File getFile = telegramClient.execute(new GetFile(fileId));
-    java.io.File file = telegramClient.downloadFile(getFile);
-    String encryptedToken = textEncryptor.encrypt(Files.readString(file.toPath()).trim());
-
-    Student student = Student.builder().telegramId(telegramId).studentToken(encryptedToken).build();
-
-    return studentService.save(student).map(savedStudent -> {
-      log.info("Student registered successfully for chatId: {}", savedStudent.getTelegramId());
-      return "✅ Registration successful!";
-    }).toFuture().thenApply(result -> {
-      if (result == null) {
-        throw new IllegalStateException("Failed to save student data.");
-      }
-      return result;
-    });
+    return studentService.findByTelegramId(telegramId)
+        .flatMap(x -> studentService.deleteStudentByTelegramId(telegramId))
+        .then(Mono.fromCallable(() -> {
+          File getFile = telegramClient.execute(new GetFile(fileId));
+          java.io.File file = telegramClient.downloadFile(getFile);
+          return Files.readString(file.toPath()).trim();
+        }).subscribeOn(Schedulers.boundedElastic())).map(textEncryptor::encrypt).flatMap(
+            encToken -> studentService.save(
+                Student.builder().telegramId(telegramId).studentToken(encToken).build()));
   }
 
-  @Async
-  public CompletableFuture<Student> sendNews(AbilityBot kiuNemoBot, long telegramId) {
-    kiuNemoBot.getSilent().send("Sending check requests...", telegramId);
-
-    return Mono.zip(Mono.fromFuture(() -> lmsService.checkNewAssignments(telegramId)),
-        Mono.fromFuture(() -> lmsService.checkNewAnnouncements(telegramId))).flatMap(tuple -> {
-      List<AssignmentMessage> assignments = tuple.getT1();
-      List<AnnouncementMessage> announcements = tuple.getT2();
-
-      if (assignments.isEmpty()) {
-        kiuNemoBot.getSilent().send("No new assignments", telegramId);
-      } else {
-        for (var assignment : assignments) {
-          kiuNemoBot.getSilent().send(assignment.toString(), telegramId);
-        }
-
-      }
-
-      if (announcements.isEmpty()) {
-        kiuNemoBot.getSilent().send("No new announcements", telegramId);
-      } else {
-        for (var announcement : announcements) {
-          kiuNemoBot.getSilent().send(announcement.toString(), telegramId);
-        }
-      }
-
-      return studentService.updateLastCheck(telegramId);
-    }).onErrorResume(ex -> {
-      log.error("Error checking news for chatId: {}", telegramId);
-      kiuNemoBot.getSilent().send(Constants.FAILED_CHECKING_NEWS, telegramId);
-      return Mono.empty();
-    }).toFuture();
+  public Mono<Student> sendNewsAsync(AbilityBot bot, long telegramId) {
+    return Flux.concat(lmsService.checkNewAssignments(telegramId),
+            lmsService.checkNewAnnouncements(telegramId)).subscribeOn(Schedulers.boundedElastic())
+        .switchIfEmpty(
+            Mono.fromRunnable(() -> bot.getSilent().send("No new news found!", telegramId)))
+        .doFirst(() -> bot.getSilent().send("Checking for new news...", telegramId))
+        .doOnNext(msg -> bot.getSilent().send(msg.toString(), telegramId))
+        .then(studentService.updateLastCheck(telegramId)).doOnError(ex -> {
+          log.error("Error checking news for chatId: {}", telegramId, ex);
+          bot.getSilent().send(Constants.FAILED_CHECKING_NEWS, telegramId);
+        });
   }
 
   @Async
@@ -188,9 +190,7 @@ public class BotService {
     try {
       rewindDays = Long.parseLong(timePeriodNum);
     } catch (NumberFormatException e) {
-      kiuNemoBot.getSilent()
-          .send(INVALID_TIME_PERIOD,
-              telegramId);
+      kiuNemoBot.getSilent().send(INVALID_TIME_PERIOD, telegramId);
       return;
     }
 
@@ -201,24 +201,21 @@ public class BotService {
       }
       case "hours" -> rewindDays /= 24;
       default -> {
-        kiuNemoBot.getSilent()
-            .send(Constants.INVALID_TIME_UNIT, telegramId);
+        kiuNemoBot.getSilent().send(Constants.INVALID_TIME_UNIT, telegramId);
         return;
       }
     }
 
     if (rewindDays <= 0) {
-      kiuNemoBot.getSilent()
-          .send(Constants.NEGATIVE_TIME_PERIOD_ERROR, telegramId);
+      kiuNemoBot.getSilent().send(Constants.NEGATIVE_TIME_PERIOD_ERROR, telegramId);
       return;
     }
 
     LocalDateTime timeRewind = LocalDateTime.now().minusDays(rewindDays);
-    studentService.modifyLastCheck(telegramId, timeRewind).block();
 
-    kiuNemoBot.getSilent()
-        .send(String.format("✅ Last check rewinded by %d %s\n" +
-                "📅 Current last check: %s",
-            rewindDays, "days", timeRewind), telegramId);
+    long finalRewindDays = rewindDays;
+    studentService.modifyLastCheck(telegramId, timeRewind).doOnSuccess(v -> kiuNemoBot.getSilent()
+        .send(String.format("✅ Last check rewound by %d %s\n" + "📅 Current last check: %s",
+            finalRewindDays, "days", timeRewind), telegramId)).subscribe();
   }
 }
