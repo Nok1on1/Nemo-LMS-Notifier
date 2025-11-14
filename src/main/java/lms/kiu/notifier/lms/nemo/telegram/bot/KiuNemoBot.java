@@ -7,12 +7,9 @@ import static lms.kiu.notifier.lms.nemo.utils.MessageUtils.hasMessageWith;
 import static org.telegram.telegrambots.abilitybots.api.objects.Locality.ALL;
 import static org.telegram.telegrambots.abilitybots.api.objects.Privacy.PUBLIC;
 
-import java.util.function.Predicate;
-import lms.kiu.notifier.lms.nemo.data.Constants;
 import lms.kiu.notifier.lms.nemo.lms.service.LMSService;
 import lms.kiu.notifier.lms.nemo.telegram.bot.service.BotService;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.abilitybots.api.bot.AbilityBot;
@@ -20,9 +17,7 @@ import org.telegram.telegrambots.abilitybots.api.objects.Ability;
 import org.telegram.telegrambots.abilitybots.api.objects.Flag;
 import org.telegram.telegrambots.abilitybots.api.objects.Reply;
 import org.telegram.telegrambots.abilitybots.api.objects.ReplyFlow;
-import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
-import reactor.core.scheduler.Schedulers;
 
 /**
  * Main Telegram bot controller for KIU LMS notification system.
@@ -46,20 +41,16 @@ import reactor.core.scheduler.Schedulers;
 @Component
 public class KiuNemoBot extends AbilityBot {
 
-  private final String string;
   @Value("${telegram.admin.id}")
   private long adminID;
 
-  private final TelegramClient telegramClient;
   private final BotService botService;
 
-  public KiuNemoBot(TelegramClient telegramClient, String botUsername, BotService botService,
-      String string) {
+  public KiuNemoBot(TelegramClient telegramClient, String botUsername, BotService botService) {
 
     super(telegramClient, botUsername);
     this.telegramClient = telegramClient;
     this.botService = botService;
-    this.string = string;
   }
 
   public Ability start() {
@@ -133,7 +124,6 @@ public class KiuNemoBot extends AbilityBot {
         .privacy(PUBLIC)
         .action(ctx -> {
           botService.initializeStudentAsync(ctx)
-              .collectList()
               .subscribe(courseNames -> {
                 silent.send("Courses Added:\n", ctx.chatId());
                 StringBuilder stringBuilder = new StringBuilder();

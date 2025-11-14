@@ -61,7 +61,7 @@ public abstract class InitPlaywright {
       playwright = Playwright.create();
 
       browser = playwright.chromium()
-          .launch(new LaunchOptions().setHeadless(false).setTimeout(6000));
+          .launch(new LaunchOptions().setHeadless(true).setTimeout(6000));
 
       browserContext = browser.newContext();
       page = browserContext.newPage();

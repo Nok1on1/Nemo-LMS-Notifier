@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 import lms.kiu.notifier.lms.nemo.data.Constants;
 import lms.kiu.notifier.lms.nemo.lms.service.LMSService;
 import lms.kiu.notifier.lms.nemo.mongo.model.Student;
@@ -90,7 +91,7 @@ public class BotService {
    * @param ctx context given by AbilityBot Action
    * @return CompletableFuture containing set of initialized course names
    */
-  public Flux<String> initializeStudentAsync(MessageContext ctx) {
+  public Mono<Set<String>> initializeStudentAsync(MessageContext ctx) {
     SilentSender silent = ctx.bot().getSilent();
     TelegramClient telegramClient = ctx.bot().getTelegramClient();
     Long chatId = ctx.chatId();
@@ -110,10 +111,15 @@ public class BotService {
           silent.send("It looks like you haven't registered yet.", chatId);
           silent.send("type /start for instructions", chatId);
         }))
-        .flatMapMany(student -> {
-          student.setStudentToken(textEncryptor.decrypt(student.getStudentToken()));
-          return Flux.fromIterable(new StudentInitializer(student, studentService,
-              courseService).initializeStudent().getCourseNames());
+        .flatMap(student -> {
+          CompletableFuture<Set<String>> future = CompletableFuture.supplyAsync(() -> {
+            // Entire Playwright operation in one thread
+            student.setStudentToken(textEncryptor.decrypt(student.getStudentToken()));
+            return new StudentInitializer(student, studentService,
+                courseService).initializeStudent().getCourseNames();
+          }, Executors.newSingleThreadExecutor());
+
+          return Mono.fromFuture(future);
         }).subscribeOn(Schedulers.boundedElastic());
   }
 
