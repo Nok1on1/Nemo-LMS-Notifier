@@ -27,10 +27,10 @@ public class AssignmentMessage {
     StringBuilder sb = new StringBuilder("Assignment:\n");
 
     if (endDate != null) {
-      sb.append("  endDate: ").append(endDate).append("\n");
+      sb.append("  End Date: ").append(endDate).append("\n");
     }
     if (courseName != null) {
-      sb.append("  courseName: ").append(courseName).append("\n");
+      sb.append("  Course Name: ").append(courseName).append("\n");
     }
     if (title != null) {
       sb.append("  title: ").append(title).append("\n");
@@ -39,7 +39,7 @@ public class AssignmentMessage {
       sb.append("  description:\n    ").append(description).append("\n");
     }
     if (embeddedFileLinks != null && !embeddedFileLinks.isEmpty()) {
-      sb.append("  embeddedFileLinks: ").append(embeddedFileLinks).append("\n");
+      sb.append("  Embedded File Links: ").append(embeddedFileLinks).append("\n");
     }
     return sb.toString();
   }

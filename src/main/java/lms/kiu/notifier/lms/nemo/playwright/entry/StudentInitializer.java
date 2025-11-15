@@ -85,6 +85,7 @@ public class StudentInitializer extends InitPlaywright {
         courseSteps.buildSubSectionIterator();
 
         while (courseSteps.goToNextSubSection()) {
+          // ?! this might give me nightmares later
           page.onRequest(this::handleGetCourseRequest);
 
           page.goBack();

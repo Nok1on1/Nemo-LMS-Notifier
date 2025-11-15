@@ -1,28 +1,20 @@
 package lms.kiu.notifier.lms.nemo.lms.service;
 
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import lms.kiu.notifier.lms.nemo.data.Constants;
 import lms.kiu.notifier.lms.nemo.lms.model.messages.AnnouncementMessage;
 import lms.kiu.notifier.lms.nemo.lms.model.messages.AssignmentMessage;
 import lms.kiu.notifier.lms.nemo.lms.model.response.AnnouncementResponse;
 import lms.kiu.notifier.lms.nemo.lms.model.response.AssignmentResponse;
-import lms.kiu.notifier.lms.nemo.mongo.model.Student;
 import lms.kiu.notifier.lms.nemo.mongo.service.CourseService;
 import lms.kiu.notifier.lms.nemo.mongo.service.StudentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Slf4j
 @Service
@@ -74,12 +66,10 @@ public class LMSService {
                   .time(data.getUpdatedAt())
                   .message(data.getTitle())
                   .build()
-              );
+              ).subscribeOn(Schedulers.boundedElastic());
         });
   }
 
-
-  @Async
   public Flux<AssignmentMessage> checkNewAssignments(Long telegramId) {
     return studentService.findByTelegramId(telegramId)
         .flatMapMany(student -> {

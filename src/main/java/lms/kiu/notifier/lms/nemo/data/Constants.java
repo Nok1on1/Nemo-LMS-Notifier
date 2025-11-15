@@ -1,9 +1,5 @@
 package lms.kiu.notifier.lms.nemo.data;
 
-import java.net.URI;
-import java.util.function.Function;
-import org.springframework.web.util.UriBuilder;
-
 public class Constants {
 
   // Playwright was acting tuff so I made it Alpha Sub ٩◔̯◔۶
@@ -33,17 +29,17 @@ public class Constants {
       • This will fetch all your enrolled courses (takes ~1 minute)
       
       3️⃣ Check for updates manually:
-      • Use /check_news anytime
       • Get notifications about new posts and homework
+      • Use /check_news anytime
+      • Use /check_news_from to check past updates (e.g., /check_news_from 2 days)
       
       🕒 Automatic Scheduler:
       • The bot automatically checks your LMS 3 times a day — at 11:00, 16:00, and 20:00 (Tbilisi time)
-      • You’ll receive updates even if you don’t run /check_news yourself
-      • Sit back and let the bot keep you in the loop 📬
+      • You'll receive updates even if you don't run /check_news yourself
       
       💡 Tip: Use /commands to see all available commands.
       
-      🚀 Let’s begin! Type "register token" to start registration.
+      🚀 Type "register token" to start registration.
       """;
   public static final String HELP_MESSAGE = """
       ❓ I didn't understand that command.
@@ -90,19 +86,21 @@ public class Constants {
       
       🐛 Known features (not bugs):
       • Playwright sometimes needs a nap
-      • Initialization takes time — blame the LMS
+      • Now with improved `/check_news_from` functionality for historical checks!
       
       💬 Commands:
       /start — Welcome & setup
       register token — Upload your LMS token
       /init_student — Initialize your courses
       /check_news — Manually check updates
+      /check_news_from — Check past updates (e.g., /check_news_from 2 days)
       /commands — See all commands
       /about — You’re here already 🎉
       
       👀 Fun fact:
       Finding LMS updates is like finding Nemo. 🐠
       """;
+
   public static final String INVALID_TIME_PERIOD = "⚠️ Invalid number format. Please enter a valid number for the time period.";
   public static final String INVALID_TIME_UNIT =
       "❌ Invalid time unit. Please use one of the following:\n" +

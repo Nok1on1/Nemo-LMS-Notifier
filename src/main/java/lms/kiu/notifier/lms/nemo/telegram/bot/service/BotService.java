@@ -1,6 +1,5 @@
 package lms.kiu.notifier.lms.nemo.telegram.bot.service;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
 import static lms.kiu.notifier.lms.nemo.data.Constants.INVALID_TIME_PERIOD;
 import static lms.kiu.notifier.lms.nemo.data.Constants.REGISTRATION_HELPER_MESSAGE;
 
@@ -8,7 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -137,7 +135,7 @@ public class BotService {
    *
    * @param bot BotInstance
    * @param upd update from Telegram
-   * @return
+   * @return registered student
    */
   public Mono<Student> processRegistrationAsync(BaseAbilityBot bot, Update upd) {
 
@@ -177,7 +175,7 @@ public class BotService {
 
   public Mono<Student> sendNewsAsync(AbilityBot bot, long telegramId) {
     return Flux.concat(lmsService.checkNewAssignments(telegramId),
-            lmsService.checkNewAnnouncements(telegramId)).subscribeOn(Schedulers.boundedElastic())
+            lmsService.checkNewAnnouncements(telegramId))
         .switchIfEmpty(
             Mono.fromRunnable(() -> bot.getSilent().send("No new news found!", telegramId)))
         .doFirst(() -> bot.getSilent().send("Checking for new news...", telegramId))
