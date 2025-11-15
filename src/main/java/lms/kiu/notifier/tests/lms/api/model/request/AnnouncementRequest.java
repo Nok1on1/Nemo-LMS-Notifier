@@ -1,0 +1,18 @@
+package lms.kiu.notifier.tests.lms.api.model.request;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class AnnouncementRequest {
+
+  @JsonProperty("id")
+  private int courseId;
+
+  @JsonProperty("group_id")
+  private int groupId;
+}
