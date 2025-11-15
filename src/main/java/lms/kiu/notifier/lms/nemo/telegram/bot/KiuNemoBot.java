@@ -2,19 +2,14 @@ package lms.kiu.notifier.lms.nemo.telegram.bot;
 
 import static lms.kiu.notifier.lms.nemo.data.Constants.ABOUT_MESSAGE;
 import static lms.kiu.notifier.lms.nemo.data.Constants.HELP_MESSAGE;
-import static lms.kiu.notifier.lms.nemo.data.Constants.REGISTRATION_HELPER_MESSAGE;
 import static lms.kiu.notifier.lms.nemo.data.Constants.WELCOME_MESSAGE;
+import static lms.kiu.notifier.lms.nemo.utils.MessageUtils.hasMessageWith;
 import static org.telegram.telegrambots.abilitybots.api.objects.Locality.ALL;
 import static org.telegram.telegrambots.abilitybots.api.objects.Privacy.PUBLIC;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.function.Predicate;
-import lms.kiu.notifier.lms.nemo.data.Constants;
 import lms.kiu.notifier.lms.nemo.lms.service.LMSService;
 import lms.kiu.notifier.lms.nemo.telegram.bot.service.BotService;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.abilitybots.api.bot.AbilityBot;
@@ -22,11 +17,6 @@ import org.telegram.telegrambots.abilitybots.api.objects.Ability;
 import org.telegram.telegrambots.abilitybots.api.objects.Flag;
 import org.telegram.telegrambots.abilitybots.api.objects.Reply;
 import org.telegram.telegrambots.abilitybots.api.objects.ReplyFlow;
-import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
-import org.telegram.telegrambots.meta.api.objects.Document;
-import org.telegram.telegrambots.meta.api.objects.InputFile;
-import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 /**
@@ -52,15 +42,11 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
 public class KiuNemoBot extends AbilityBot {
 
   @Value("${telegram.admin.id}")
-  private static long adminID;
+  private long adminID;
 
-  private final TelegramClient telegramClient;
   private final BotService botService;
 
-  public KiuNemoBot(
-      TelegramClient telegramClient,
-      String botUsername,
-      BotService botService) {
+  public KiuNemoBot(TelegramClient telegramClient, String botUsername, BotService botService) {
 
     super(telegramClient, botUsername);
     this.telegramClient = telegramClient;
@@ -68,33 +54,19 @@ public class KiuNemoBot extends AbilityBot {
   }
 
   public Ability start() {
-    return Ability.builder()
-        .name("start")
-        .info("Start the bot and view instructions")
-        .privacy(PUBLIC)
-        .locality(ALL)
-        .action(ctx -> silent.send(WELCOME_MESSAGE, ctx.chatId()))
+    return Ability.builder().name("start").info("Start the bot and view instructions")
+        .privacy(PUBLIC).locality(ALL).action(ctx -> silent.send(WELCOME_MESSAGE, ctx.chatId()))
         .build();
   }
 
   public Ability about() {
-    return Ability.builder()
-        .name("about")
-        .privacy(PUBLIC)
-        .locality(ALL)
-        .action(ctx -> silent.send(ABOUT_MESSAGE, ctx.chatId()))
-        .build();
+    return Ability.builder().name("about").privacy(PUBLIC).locality(ALL)
+        .action(ctx -> silent.send(ABOUT_MESSAGE, ctx.chatId())).build();
   }
 
   public Ability defaultMessage() {
-    return Ability.builder()
-        .name(DEFAULT)
-        .flag(Flag.MESSAGE)
-        .privacy(PUBLIC)
-        .locality(ALL)
-        .input(0)
-        .action(ctx -> silent.send(HELP_MESSAGE, ctx.chatId()))
-        .build();
+    return Ability.builder().name(DEFAULT).flag(Flag.MESSAGE).privacy(PUBLIC).locality(ALL).input(0)
+        .action(ctx -> silent.send(HELP_MESSAGE, ctx.chatId())).build();
   }
 
   /**
@@ -111,33 +83,9 @@ public class KiuNemoBot extends AbilityBot {
    * @return ReplyFlow configuration for registration process
    */
   public ReplyFlow registrationFlow() {
-    return ReplyFlow.builder(db)
-        .action((bot, upd) -> {
-          InputStream imageStream = getClass().getResourceAsStream("/CopyToken.png");
-
-          try (imageStream) {
-            try {
-              if (imageStream == null) {
-                silent.send("Could not load registration instructions",
-                    upd.getMessage().getChatId());
-                return;
-              }
-              SendPhoto sendPhoto = SendPhoto.builder()
-                  .chatId(upd.getMessage().getChatId().toString())
-                  .photo(new InputFile(imageStream, "copyToken.png"))
-                  .caption(REGISTRATION_HELPER_MESSAGE)
-                  .build();
-              bot.getTelegramClient().execute(sendPhoto);
-            } catch (TelegramApiException e) {
-              silent.send("failed to fetch photo", upd.getMessage().getChatId());
-            }
-          } catch (IOException e) {
-            log.error("Error closing image stream", e);
-          }
-        })
-        .onlyIf(hasMessageWith("register token"))
-        .next(fileReceived())
-        .build();
+    return ReplyFlow.builder(db).action(
+            (bot, upd) -> botService.sendRegistrationInstructions(bot, upd.getMessage().getChatId()))
+        .onlyIf(hasMessageWith("register token")).next(fileReceived()).build();
   }
 
   /**
@@ -150,40 +98,10 @@ public class KiuNemoBot extends AbilityBot {
    */
   private Reply fileReceived() {
     return Reply.of((bot, upd) -> {
-      Document document = upd.getMessage().getDocument();
-      Long chatId = upd.getMessage().getChatId();
-
-      String fileId = document.getFileId();
-      String fileName = document.getFileName();
-      Long fileSize = document.getFileSize();
-
-      log.info("Received file - ID: {}, Name: {}, Size: {} bytes", fileId, fileName, fileSize);
-
-      if (!fileName.endsWith(".txt")) {
-        silent.send("File is not .txt extension. Start Again!", chatId);
-        return;
-      }
-      if (fileSize > 10 * 1024) {
-        silent.send("File is too big for it to be a Token, stop breaking things!", chatId);
-        return;
-      }
-
-      silent.send("Processing your registration...", chatId);
-
-      try {
-        botService.processRegistrationAsync(chatId, fileId, bot.getTelegramClient())
-            .thenAccept(result -> silent.send(result, chatId))
-            .exceptionally(ex -> {
-              log.error("Error in async registration", ex);
-              silent.send("Registration failed. Please try again.", chatId);
-              return null;
-            });
-
-      } catch (TelegramApiException | IOException e) {
-        log.error("Error processing file", e);
-        silent.send("Can't Read the File", chatId);
-      }
-
+      botService.processRegistrationAsync(bot, upd)
+          .doOnSuccess(s -> silent.send("✅ Registration successful!", upd.getMessage().getChatId()))
+          .doOnError(e -> silent.send("Error, Something went wrong!", upd.getMessage().getChatId()))
+          .then().subscribe();
     }, Flag.DOCUMENT);
   }
 
@@ -205,29 +123,17 @@ public class KiuNemoBot extends AbilityBot {
         .locality(ALL)
         .privacy(PUBLIC)
         .action(ctx -> {
-          Long chatId = ctx.chatId();
-
-          silent.send(String.format(
-                  "Starting up Playwright automation Script on: %s \n this will take up to 1 minute...",
-                  Constants.MAIN_URL),
-              chatId);
-
-          // Process asynchronously
-          botService.initializeStudentAsync(chatId, telegramClient, silent)
-              .thenAccept(courseNames -> {
-                if (!courseNames.isEmpty()) {
-                  StringBuilder sb = new StringBuilder();
-                  for (var course : courseNames) {
-                    sb.append(course).append("\n");
-                  }
-
-                  silent.send(String.format("Courses Added:\n%s", sb), chatId);
-                }
-              })
-              .exceptionally(ex -> {
-                log.error("Error initializing student for chatId: {}", chatId, ex);
-                silent.send("Failed to initialize student. Please try again later.", chatId);
-                return null;
+          botService.initializeStudentAsync(ctx)
+              .subscribe(courseNames -> {
+                silent.send("Courses Added:\n", ctx.chatId());
+                StringBuilder stringBuilder = new StringBuilder();
+                courseNames.forEach(courseName ->
+                    stringBuilder.append(courseName).append("\n"));
+                ctx.bot().getSilent().send(stringBuilder.toString(), ctx.chatId());
+              }, error -> {
+                log.error("Error initializing student", error);
+                ctx.bot().getSilent()
+                    .send("An error occurred during initialization.", ctx.chatId());
               });
         })
         .build();
@@ -245,32 +151,18 @@ public class KiuNemoBot extends AbilityBot {
    */
   public Ability checkNews() {
     return Ability.builder().name("check_news")
-        .info("checks all of the courses' Announcements and Assignments")
-        .locality(ALL)
+        .info("checks all of the courses' Announcements and Assignments").locality(ALL)
         .privacy(PUBLIC)
-        .action(ctx ->
-            botService.sendNews(this, ctx.chatId())
-        ).build();
+        .action(ctx -> botService.sendNewsAsync(this, ctx.chatId()).then().subscribe()).build();
   }
 
-  public Ability checkNewsRewind() {
-    return Ability.builder().name("check_news_from")
-        .info(
+  public Ability rewindCheckNews() {
+    return Ability.builder().name("check_news_from").info(
             "Get news from a specific time period in the past.\nUsage: /check_news_from <number> <hours|days|weeks|months>\nExample: /check_news_from 2 days")
-        .locality(ALL)
-        .input(2)
-        .privacy(PUBLIC)
-        .action(
-            ctx -> {
-              botService.rewindLastCheck(this, ctx.chatId(), ctx.firstArg(), ctx.secondArg());
-              botService.sendNews(this, ctx.chatId());
-            })
-        .build();
-  }
-
-  @NotNull
-  private Predicate<Update> hasMessageWith(String msg) {
-    return upd -> upd.getMessage().getText().equalsIgnoreCase(msg);
+        .locality(ALL).input(2).privacy(PUBLIC).action(ctx -> {
+          botService.rewindLastCheck(this, ctx.chatId(), ctx.firstArg(), ctx.secondArg());
+          botService.sendNewsAsync(this, ctx.chatId()).subscribe();
+        }).build();
   }
 
   @Override

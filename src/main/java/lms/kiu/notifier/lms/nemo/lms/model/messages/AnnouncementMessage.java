@@ -22,16 +22,16 @@ public class AnnouncementMessage {
     StringBuilder sb = new StringBuilder("Post:\n");
 
     if (courseName != null) {
-      sb.append("  courseName: ").append(courseName).append("\n");
+      sb.append("  Course Name: ").append(courseName).append("\n");
     }
     if (time != null) {
-      sb.append("  time: ").append(time.toLocalDate()).append("\n");
+      sb.append("  Time: ").append(time.toLocalDate()).append("\n");
     }
     if (url != null) {
-      sb.append("  url: ").append(url).append("\n");
+      sb.append("  Url: ").append(url).append("\n");
     }
     if (message != null) {
-      sb.append("  message:\n    ").append(message).append("\n");
+      sb.append("  Message:\n    ").append(message).append("\n");
     }
 
     return sb.toString();
