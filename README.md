@@ -203,7 +203,6 @@ Student tokens are encrypted using Spring Security's `TextEncryptor`. No plain-t
 ## 🐛 Known Issues (Features?)
 
 - Playwright can be moody sometimes (hence the `PLAYWRIGHT_THREAD_SLEEP_TIME = 800L`)
-- Blocking calls in reactive chains (we're working on it... eventually)
 - The bot might send you homework notifications at 2 AM (don't shoot the messenger)
 
 ## 🤔 FAQ
@@ -228,11 +227,11 @@ A: yea 😊 maybe 😒 I don't know 🙏
 
 ## 🚀 Future Improvements (Maybe)
 
-- [ ] Add scheduled news checks
+- [x] Add scheduled news checks
 - [ ] Docker support
-- [ ] Better error messages
+- [x] Better error messages
 - [ ] Unit tests (who needs those)
-- [ ] Remove all blocking calls in reactive chains
+- [x] Remove all blocking calls in reactive chains
 
 ## 🤝 Contributing
 
