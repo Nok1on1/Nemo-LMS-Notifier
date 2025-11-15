@@ -26,7 +26,7 @@ class LMSServicePerformanceTest {
   @Value("${telegram.admin.id}")
   private long telegramID;
 
-  private static final int CONCURRENT_USERS = 15;
+  private static final int CONCURRENT_USERS = 30;
 
   private final Map<String, List<Long>> timings = new ConcurrentHashMap<>();
 
@@ -66,7 +66,7 @@ class LMSServicePerformanceTest {
     long start = System.currentTimeMillis();
 
     long rewindStart = System.currentTimeMillis();
-    return Mono.fromFuture(botService.rewindLastCheck(kiuNemoBot, telegramID, "5", "days"))
+    return botService.rewindLastCheck(kiuNemoBot, telegramID, "5", "days")
         .doOnSuccess(v -> record("rewind", System.currentTimeMillis() - rewindStart))
         .then(Mono.defer(() -> {
           long newsStart = System.currentTimeMillis();

@@ -65,7 +65,7 @@ public class LMSService {
                   .time(data.getUpdatedAt())
                   .message(data.getTitle())
                   .build()
-              ).subscribeOn(Schedulers.boundedElastic());
+              );
         });
   }
 
@@ -103,15 +103,13 @@ public class LMSService {
         .header(HttpHeaders.AUTHORIZATION, "Bearer " + studentToken)
         .bodyValue(getCoursesInfoReq)
         .retrieve()
-        .bodyToMono(CoursesInfoResponse.class)
-        .subscribeOn(Schedulers.boundedElastic());
+        .bodyToMono(CoursesInfoResponse.class);
   }
 
   public Mono<DashboardResponse> getStudentDashboard(String studentToken) {
     return webClient.get()
         .uri(Constants.STUDENT_DASHBOARD_URL_PATH)
         .header(HttpHeaders.AUTHORIZATION, "bearer" + studentToken)
-        .retrieve().bodyToMono(DashboardResponse.class)
-        .subscribeOn(Schedulers.boundedElastic());
+        .retrieve().bodyToMono(DashboardResponse.class);
   }
 }

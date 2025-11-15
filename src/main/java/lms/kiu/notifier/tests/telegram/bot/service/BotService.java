@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
-import java.util.concurrent.CompletableFuture;
 import lms.kiu.notifier.tests.data.Constants;
 import lms.kiu.notifier.tests.lms.api.model.request.GetCoursesInfoRequest;
 import lms.kiu.notifier.tests.lms.api.service.LMSService;
@@ -110,26 +109,17 @@ public class BotService {
     }).then(Mono.empty())).flatMap(student -> {
       String decryptedToken = textEncryptor.decrypt(student.getStudentToken());
 
-      return lmsService.getRegistrationGroupIdResponse(decryptedToken)
-          .flatMap(GroupIdRes -> {
+      return lmsService.getRegistrationGroupIdResponse(decryptedToken).flatMap(GroupIdRes -> {
             var getCoursesInfoReq = GetCoursesInfoRequest.builder()
                 .learningYear(GroupIdRes.getList().getFirst().getSeasonYear())
                 .registrationGroupId(GroupIdRes.getSelectedGroupId()).build();
 
             return lmsService.getStudentCoursesInfo(decryptedToken, getCoursesInfoReq);
-          })
-          .flatMapMany(CoursesInfoRes ->
-              Flux.fromIterable(CoursesInfoRes.getData())
-                  .flatMap(data -> Flux.fromIterable(data.getItems()))
-                  .map(item -> Course.builder()
-                      .courseName(item.getName())
-                      .courseId(item.getListId())
-                      .groupId(item.getCourseGroupId())
-                      .build())
-          )
-          .flatMap(courseService::save)
-          .flatMap(course -> studentService.addCourse(student.getTelegramId(), course))
-          .then();
+          }).flatMapMany(CoursesInfoRes -> Flux.fromIterable(CoursesInfoRes.getData())
+              .flatMap(data -> Flux.fromIterable(data.getItems())).map(
+                  item -> Course.builder().courseName(item.getName()).courseId(item.getListId())
+                      .groupId(item.getCourseGroupId()).build())).flatMap(courseService::save)
+          .flatMap(course -> studentService.addCourse(student.getTelegramId(), course)).then();
     });
   }
 
@@ -188,63 +178,56 @@ public class BotService {
           File getFile = telegramClient.execute(new GetFile(fileId));
           java.io.File file = telegramClient.downloadFile(getFile);
           return Files.readString(file.toPath()).trim();
-        }).subscribeOn(Schedulers.boundedElastic()))
-        .map(textEncryptor::encrypt)
-        .flatMap(encToken -> studentService.save(
-            Student.builder().telegramId(telegramId).studentToken(encToken).build()));
+        }).subscribeOn(Schedulers.boundedElastic())).map(textEncryptor::encrypt).flatMap(
+            encToken -> studentService.save(
+                Student.builder().telegramId(telegramId).studentToken(encToken).build()));
   }
 
   public Mono<UpdateResult> sendNewsAsync(AbilityBot bot, long telegramId) {
     return Flux.concat(lmsService.checkNewAssignments(telegramId),
-            lmsService.checkNewAnnouncements(telegramId))
-        .doFirst(() -> bot.getSilent().send("Checking for new news...", telegramId))
+            lmsService.checkNewAnnouncements(telegramId)).doFirst(
+            () -> bot.getSilent().send("Checking for new news...", telegramId))
         .switchIfEmpty(
             Mono.fromRunnable(() -> bot.getSilent().send("No new news found!", telegramId)))
-        .doOnNext(msg -> bot.getSilent().send(msg.toString(), telegramId))
+        .flatMap(msg -> Mono.fromRunnable(() -> bot.getSilent().send(msg.toString(), telegramId)))
         .then(studentService.updateLastCheck(telegramId)).doOnError(ex -> {
           log.error("Error checking news for chatId: {}", telegramId, ex);
           bot.getSilent().send(Constants.FAILED_CHECKING_NEWS_ERROR, telegramId);
         });
   }
 
-  @Async
-  public CompletableFuture<Void> rewindLastCheck(AbilityBot kiuNemoBot, long telegramId,
-      String timePeriodNum,
+  public Mono<Void> rewindLastCheck(AbilityBot bot, long telegramId, String timePeriodNum,
       String timeUnit) {
     long rewindDays;
-
     try {
       rewindDays = Long.parseLong(timePeriodNum);
     } catch (NumberFormatException e) {
-      kiuNemoBot.getSilent().send(INVALID_TIME_PERIOD_ERROR, telegramId);
-      return CompletableFuture.completedFuture(null);
+      bot.getSilent().send(INVALID_TIME_PERIOD_ERROR, telegramId);
+      return Mono.empty();
     }
 
     switch (timeUnit.toLowerCase()) {
       case "month", "months" -> rewindDays *= 30;
       case "week", "weeks" -> rewindDays *= 7;
+      case "hour", "hours" -> rewindDays /= 24;
       case "day", "days" -> {
       }
-      case "hour", "hours" -> rewindDays /= 24;
       default -> {
-        kiuNemoBot.getSilent().send(Constants.INVALID_TIME_UNIT_ERROR, telegramId);
-        return CompletableFuture.completedFuture(null);
+        bot.getSilent().send(Constants.INVALID_TIME_UNIT_ERROR, telegramId);
+        return Mono.empty();
       }
     }
 
     if (rewindDays <= 0) {
-      kiuNemoBot.getSilent().send(Constants.NEGATIVE_TIME_PERIOD_ERROR, telegramId);
-      return CompletableFuture.completedFuture(null);
+      bot.getSilent().send(Constants.NEGATIVE_TIME_PERIOD_ERROR, telegramId);
+      return Mono.empty();
     }
 
     LocalDateTime timeRewind = LocalDateTime.now().minusDays(rewindDays);
 
     long finalRewindDays = rewindDays;
-    return studentService.modifyLastCheck(telegramId, timeRewind)
-        .doOnSuccess(v -> kiuNemoBot.getSilent()
-            .send(String.format("✅ Last check rewound by %d %s\n" + "📅 Current last check: %s",
-                finalRewindDays, "days", timeRewind), telegramId))
-        .then()
-        .toFuture();
+    return studentService.modifyLastCheck(telegramId, timeRewind).doOnSuccess(v -> bot.getSilent()
+        .send(String.format("✅ Last check rewound by %d days\n📅 Current last check: %s",
+            finalRewindDays, timeRewind), telegramId)).then();
   }
 }

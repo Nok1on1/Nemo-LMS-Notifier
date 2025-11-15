@@ -158,8 +158,7 @@ public class KiuNemoBot extends AbilityBot {
     return Ability.builder().name("check_news_from").info(
             "Get news from a specific time period in the past.\nUsage: /check_news_from <number> <hours|days|weeks|months>\nExample: /check_news_from 2 days")
         .locality(ALL).input(2).privacy(PUBLIC).action(ctx -> {
-          Mono.fromFuture(
-                  botService.rewindLastCheck(this, ctx.chatId(), ctx.firstArg(), ctx.secondArg()))
+          botService.rewindLastCheck(this, ctx.chatId(), ctx.firstArg(), ctx.secondArg())
               .then(botService.sendNewsAsync(this, ctx.chatId()))
               .onErrorResume(err -> {
                 log.error(err.getMessage(), err);
