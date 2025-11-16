@@ -14,7 +14,6 @@ bot is that someone.
 **Features:**
 
 - 🔐 Secure token-based authentication
-- 🕷️ Web scraping with Playwright (the fancy kind of stalking)
 - 📚 Automatically fetches all your enrolled courses
 - 🔔 Checks for new posts and homework assignments
 - 💾 MongoDB storage (because data should persist somewhere)
@@ -28,79 +27,34 @@ This project is powered by:
 - ☕ **Java 21** - The latest and greatest
 - 🍃 **Spring Boot** - Because uhh... beans.
 - 🌊 **Spring WebFlux** - Reactive programming
-- 🎭 **Playwright** - Browser automation, Held by single Thread... (literally)
 - 🍃 **MongoDB** - NoSQL database
 - 📱 **Telegram Bot API** - Your notification delivery system
 - 🔐 **Spring Security Crypto** - Keeping tokens encrypted
-- 🎯 **Lombok** - Less boilerplate, more productivity
-
-## 📋 Prerequisites
-
-Before you dive in, make sure you have:
-
-- ☕ Java 21 or higher
-- 🍃 MongoDB instance (local or cloud)
-- 🤖 Telegram Bot Token (from [@BotFather](https://t.me/botfather))
-- 🎓 KIU LMS Student Token (from your browser)
-- 🧠 A moderate understanding of what you're doing
-
-## ⚙️ Setup
-
-### 1. Clone this beauty
-
-```bash
-git clone https://github.com/yourusername/Nemo-LMS-Notifier.git
-cd Nemo-LMS-Notifier
-```
-
-```
-
-
-### 2. Configure application properties
-
-Create `src/main/resources/application.properties`:
-
-```properties
-# Telegram Bot Configuration
-telegram.bot.token=YOUR_TELEGRAM_BOT_TOKEN
-telegram.bot.username=YOUR_BOT_USERNAME
-
-# MongoDB Configuration
-spring.data.mongodb.uri=mongodb://localhost:27017/nemo-lms
-# or for MongoDB Atlas:
-# spring.data.mongodb.uri=mongodb+srv://user:pass@cluster.mongodb.net/nemo-lms
-
-# Encryption (generate your own!)
-app.encryption.password=YOUR-SUPER-SECRET-ENCRYPTION-KEY
-app.encryption.salt=YOUR-SALT-VALUE
-
-# Async Thread Pool
-spring.task.execution.pool.core-size=2
-spring.task.execution.pool.max-size=5
-spring.task.execution.pool.queue-capacity=100
-```
-
-### 3. Build the project
-
-```shell script
-./gradlew build
-```
-
-### 4. Run it!
-
-```shell script
-./gradlew bootRun
-```
 
 ## 🎮 How to Use
 
 ### Step 1: Get Your Student Token
 
-1. Open your browser and go to [lms.kiu.edu.ge](https://lms.kiu.edu.ge)
-2. Press `F12` to open DevTools
-3. Navigate to **Application** → **Local Storage** → `lms.kiu.edu.ge`
-4. Find the `Student-Token` key and copy its value
-5. Save it to a `.txt` file
+1. Go to https://lms.kiu.edu.ge and make sure you're logged in.
+2. Open your browser’s Developer Tools:
+
+    - **Chrome / Edge / Brave**: Press F12 or Ctrl+Shift+I
+    - **Firefox**: Press F12 or Ctrl+Shift+I
+    - **Safari (macOS)**: First enable Developer menu (Safari → Settings → Advanced → "Show Develop
+      menu"), then press Option+Command+I
+
+3. Open the **Application** (Chrome/Edge/Brave), **Storage** (Firefox),
+   or **Storage** (Safari → Develop Tools).
+
+4. Find **Local Storage** → select **lms.kiu.edu.ge**.
+
+5. Look for the key **"Student-Token"** and copy its value.
+
+6. Paste the token into a .txt file.
+
+7. Send that .txt file here.
+
+⚠️ Keep your token private — don’t share it with anyone!
 
 ### Step 2: Register with the Bot
 
@@ -137,20 +91,82 @@ The bot will:
 
 ## 🤝 Available Commands
 
-| Command          | Description                   |
-|------------------|-------------------------------|
-| `/start`         | Welcome message & setup guide |
-| `/commands`      | List all available commands   |
-| `register token` | Begin registration process    |
-| `/init_student`  | Initialize enrolled courses   |
-| `/check_news`    | Check for new updates         |
-| `/help`          | Get help message              |
+| Command                                                                | Description                                        |
+|------------------------------------------------------------------------|----------------------------------------------------|
+| `/start`                                                               | Welcome message & setup guide                      |
+| `/commands`                                                            | List all available commands                        |
+| `register token`                                                       | Begin registration process                         |
+| `/init_student`                                                        | Initialize enrolled courses                        |
+| `/check_news`                                                          | Manually check updates                             |
+| `/check_news_from <PositiveInteger> <hour(s)/day(s)/week(s)/month(s)>` | Check past updates (e.g., /check_news_from 2 days) |
+| `/help`                                                                | Get help message                                   |
+| `/report_bug <Message>`                                                | Report bug to the admin                            |
+| `/about`                                                               | About the bot                                      |
+
+# ⚙️ Setup
+
+## 📋 Prerequisites
+
+Before you dive in, make sure you have:
+
+- ☕ Java 21 or higher
+- 🍃 MongoDB instance (local or cloud)
+- 🤖 Telegram Bot Token (from [@BotFather](https://t.me/botfather))
+- 🎓 KIU LMS Student Token (from your browser)
+- 🧠 A moderate understanding of what you're doing
+
+### 1. Clone this beauty
+
+```bash
+git clone https://github.com/yourusername/Nemo-LMS-Notifier.git
+cd Nemo-LMS-Notifier
+```
+
+```
+
+
+### 2. Configure application properties
+
+Create `src/main/resources/application.yaml`:
+
+```properties
+spring:
+  data:
+    mongodb:
+      uri: <uri>
+      database: <databaseName>
+
+telegram:
+  bot:
+    token: <botToken>
+    username: <botUsername>
+  admin:
+    id: <adminId>
+
+encryptor:
+  password: <hexEncodedPassword>
+  salt: <hexEncodedSalt>
+  
+```
+
+### 3. Build the project
+
+```shell script
+./gradlew build
+```
+
+### 4. Run it!
+
+```shell script
+./gradlew bootRun
+```
 
 ## 🏗️ Project Structure
 
 p.s might not be accurate
+
 ```text
-src/main/java/lms/kiu/notifier/lms/nemo/
+src/main/java/lms/kiu/notifier/
 ├── data/ # Constants and models
 ├── lms/ # LMS automation logic
 │ ├── model/ # Request/response models
@@ -159,10 +175,6 @@ src/main/java/lms/kiu/notifier/lms/nemo/
 │ ├── model/ # MongoDB entities
 │ ├── repository/ # Spring Data repositories
 │ └── service/ # Database services
-├── playwright/ # Browser automation
-│ ├── page/ # Page objects
-│ ├── operation/ # Browser operations
-│ └── util/ # Helper utilities
 ├── scheduler/ # Scheduled tasks
 ├── security/ # Encryption, tokens
 ├── telegram/ # Telegram bot
@@ -180,11 +192,6 @@ src/main/java/lms/kiu/notifier/lms/nemo/
 Uses Spring WebFlux and Project Reactor for non-blocking, async operations. Because blocking is for
 traffic, not code.
 
-### Playwright Magic 🎭
-
-Automated browser navigation to scrape course data. It's like having a robot assistant who never
-sleeps (or complains).
-
 ### MongoDB Storage 💾
 
 Reactive MongoDB with TTL indexes ensures data doesn't stick around forever (7-day expiry on student
@@ -200,11 +207,6 @@ Student tokens are encrypted using Spring Security's `TextEncryptor`. No plain-t
 - You’ll receive updates even if you don’t run /check_news yourself
 - Sit back and let the bot keep you in the loop 📬
 
-## 🐛 Known Issues (Features?)
-
-- Playwright can be moody sometimes (hence the `PLAYWRIGHT_THREAD_SLEEP_TIME = 800L`)
-- The bot might send you homework notifications at 2 AM (don't shoot the messenger)
-
 ## 🤔 FAQ
 
 **Q: Why "Nemo"?**  
@@ -215,9 +217,6 @@ A: Yes! Tokens are encrypted before storage. But still, don't share your token f
 
 **Q: Can I use this for other LMS systems?**  
 A: Not without significant modifications. This is specifically built for KIU's LMS.
-
-**Q: Why does initialization take so long?**  
-A: Playwright needs to navigate through each course and subsection. Blame the LMS, not the bot.
 
 **Q: Will this get me in trouble?**  
 A: It's just automating what you'd do manually. But use responsibly! 🙏
@@ -230,7 +229,8 @@ A: yea 😊 maybe 😒 I don't know 🙏
 - [x] Add scheduled news checks
 - [ ] Docker support
 - [x] Better error messages
-- [ ] Unit tests (who needs those)
+- [ ] Unit tests
+- [ ] Performance tests
 - [x] Remove all blocking calls in reactive chains
 
 ## 🤝 Contributing
@@ -252,19 +252,19 @@ Actually, probably MIT. Check the LICENSE file.
 ## 🙏 Acknowledgments
 
 - KIU for dumping Teams for this abomination
-- KIU for having an LMS that's scrapable
+- LMS team for making API easily accessible
 - Telegram for their amazing Bot API
-- Playwright team for making web automation less painful
 - The person reading this for considering using this bot
 
 ## 📞 Support
 
 If something breaks:
 
-1. Check the logs
-2. Google the error
-3. Cry a little
-4. Open an issue on GitHub
+1. report to me with /report_bug <Message>
+2. Check the logs
+3. Google the error
+4. Cry a little
+5. Open an issue on GitHub
 
 ---
 
