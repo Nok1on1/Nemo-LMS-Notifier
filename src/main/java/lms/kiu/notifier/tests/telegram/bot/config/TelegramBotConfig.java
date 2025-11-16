@@ -1,6 +1,5 @@
 package lms.kiu.notifier.tests.telegram.bot.config;
 
-
 import lms.kiu.notifier.tests.lms.api.service.LMSService;
 import lms.kiu.notifier.tests.mongo.service.CourseService;
 import lms.kiu.notifier.tests.mongo.service.StudentService;
@@ -19,6 +18,7 @@ public class TelegramBotConfig {
 
   @Value("${telegram.bot.username}")
   String botUsername;
+
   @Value("${telegram.bot.token}")
   private String botToken;
 
@@ -32,17 +32,18 @@ public class TelegramBotConfig {
     return new OkHttpTelegramClient(botToken);
   }
 
-
   @Bean
-  public BotService botService(StudentService studentService, CourseService courseService,
-      TextEncryptor textEncryptor, LMSService lmsService) {
+  public BotService botService(
+      StudentService studentService,
+      CourseService courseService,
+      TextEncryptor textEncryptor,
+      LMSService lmsService) {
     return new BotService(studentService, courseService, textEncryptor, lmsService);
   }
 
   @Bean
-  public NewsScheduler newsScheduler(AbilityBot kiuNemoBot,
-      StudentService studentService,
-      BotService botService) {
+  public NewsScheduler newsScheduler(
+      AbilityBot kiuNemoBot, StudentService studentService, BotService botService) {
     return new NewsScheduler(kiuNemoBot, studentService, botService);
   }
 }

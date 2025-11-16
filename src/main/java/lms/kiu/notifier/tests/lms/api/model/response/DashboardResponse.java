@@ -1,7 +1,7 @@
 package lms.kiu.notifier.tests.lms.api.model.response;
 
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 import lms.kiu.notifier.tests.lms.api.model.response.subresponses.dashboard.EducationsItem;
 import lms.kiu.notifier.tests.lms.api.model.response.subresponses.dashboard.ProgramViewItem;
 import lms.kiu.notifier.tests.lms.api.model.response.subresponses.dashboard.ProgramsItem;

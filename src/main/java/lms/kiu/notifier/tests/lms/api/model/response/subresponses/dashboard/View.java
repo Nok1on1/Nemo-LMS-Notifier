@@ -4,113 +4,113 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
-public class View{
+public class View {
 
-	@JsonProperty("created_at")
-	private String createdAt;
+  @JsonProperty("created_at")
+  private String createdAt;
 
-	@JsonProperty("eduId")
-	private int eduId;
+  @JsonProperty("eduId")
+  private int eduId;
 
-	@JsonProperty("specialId")
-	private int specialId;
+  @JsonProperty("specialId")
+  private int specialId;
 
-	@JsonProperty("averageScore")
-	private int averageScore;
+  @JsonProperty("averageScore")
+  private int averageScore;
 
-	@JsonProperty("financeGraphPermanentlyAutumn")
-	private String financeGraphPermanentlyAutumn;
+  @JsonProperty("financeGraphPermanentlyAutumn")
+  private String financeGraphPermanentlyAutumn;
 
-	@JsonProperty("financeGraphPermanentlyReSpring")
-	private String financeGraphPermanentlyReSpring;
+  @JsonProperty("financeGraphPermanentlyReSpring")
+  private String financeGraphPermanentlyReSpring;
 
-	@JsonProperty("updated_at")
-	private String updatedAt;
+  @JsonProperty("updated_at")
+  private String updatedAt;
 
-	@JsonProperty("bankTransactPerm")
-	private int bankTransactPerm;
+  @JsonProperty("bankTransactPerm")
+  private int bankTransactPerm;
 
-	@JsonProperty("financeGraphKeySpring")
-	private Object financeGraphKeySpring;
+  @JsonProperty("financeGraphKeySpring")
+  private Object financeGraphKeySpring;
 
-	@JsonProperty("defaultCurrency")
-	private int defaultCurrency;
+  @JsonProperty("defaultCurrency")
+  private int defaultCurrency;
 
-	@JsonProperty("schoolId")
-	private int schoolId;
+  @JsonProperty("schoolId")
+  private int schoolId;
 
-	@JsonProperty("specialName")
-	private String specialName;
+  @JsonProperty("specialName")
+  private String specialName;
 
-	@JsonProperty("gpa")
-	private Object gpa;
+  @JsonProperty("gpa")
+  private Object gpa;
 
-	@JsonProperty("minorProgramId")
-	private int minorProgramId;
+  @JsonProperty("minorProgramId")
+  private int minorProgramId;
 
-	@JsonProperty("id")
-	private int id;
+  @JsonProperty("id")
+  private int id;
 
-	@JsonProperty("schoolName")
-	private String schoolName;
+  @JsonProperty("schoolName")
+  private String schoolName;
 
-	@JsonProperty("credit")
-	private int credit;
+  @JsonProperty("credit")
+  private int credit;
 
-	@JsonProperty("programCredit")
-	private int programCredit;
+  @JsonProperty("programCredit")
+  private int programCredit;
 
-	@JsonProperty("averageResult")
-	private String averageResult;
+  @JsonProperty("averageResult")
+  private String averageResult;
 
-	@JsonProperty("financeGraphTypeSpring")
-	private String financeGraphTypeSpring;
+  @JsonProperty("financeGraphTypeSpring")
+  private String financeGraphTypeSpring;
 
-	@JsonProperty("financeGraphKeyReSpring")
-	private Object financeGraphKeyReSpring;
+  @JsonProperty("financeGraphKeyReSpring")
+  private Object financeGraphKeyReSpring;
 
-	@JsonProperty("financeVerified")
-	private int financeVerified;
+  @JsonProperty("financeVerified")
+  private int financeVerified;
 
-	@JsonProperty("showInfoDialog")
-	private int showInfoDialog;
+  @JsonProperty("showInfoDialog")
+  private int showInfoDialog;
 
-	@JsonProperty("financeGraphTypeAutumn")
-	private String financeGraphTypeAutumn;
+  @JsonProperty("financeGraphTypeAutumn")
+  private String financeGraphTypeAutumn;
 
-	@JsonProperty("personalNumber")
-	private String personalNumber;
+  @JsonProperty("personalNumber")
+  private String personalNumber;
 
-	@JsonProperty("financeGraphPermanentlySpring")
-	private String financeGraphPermanentlySpring;
+  @JsonProperty("financeGraphPermanentlySpring")
+  private String financeGraphPermanentlySpring;
 
-	@JsonProperty("financeGraphId")
-	private Object financeGraphId;
+  @JsonProperty("financeGraphId")
+  private Object financeGraphId;
 
-	@JsonProperty("allowBuyCredit")
-	private int allowBuyCredit;
+  @JsonProperty("allowBuyCredit")
+  private int allowBuyCredit;
 
-	@JsonProperty("special")
-	private Special special;
+  @JsonProperty("special")
+  private Special special;
 
-	@JsonProperty("name")
-	private String name;
+  @JsonProperty("name")
+  private String name;
 
-	@JsonProperty("statementId")
-	private Object statementId;
+  @JsonProperty("statementId")
+  private Object statementId;
 
-	@JsonProperty("semester")
-	private int semester;
+  @JsonProperty("semester")
+  private int semester;
 
-	@JsonProperty("financeGraphKeyAutumn")
-	private Object financeGraphKeyAutumn;
+  @JsonProperty("financeGraphKeyAutumn")
+  private Object financeGraphKeyAutumn;
 
-	@JsonProperty("programId")
-	private int programId;
+  @JsonProperty("programId")
+  private int programId;
 
-	@JsonProperty("status")
-	private String status;
+  @JsonProperty("status")
+  private String status;
 
-	@JsonProperty("financeGraphTypeReSpring")
-	private String financeGraphTypeReSpring;
+  @JsonProperty("financeGraphTypeReSpring")
+  private String financeGraphTypeReSpring;
 }

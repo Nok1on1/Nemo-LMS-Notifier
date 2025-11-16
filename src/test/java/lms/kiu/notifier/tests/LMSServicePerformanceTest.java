@@ -17,11 +17,9 @@ import reactor.core.scheduler.Schedulers;
 @SpringBootTest
 class LMSServicePerformanceTest {
 
-  @Autowired
-  private KiuNemoBot kiuNemoBot;
+  @Autowired private KiuNemoBot kiuNemoBot;
 
-  @Autowired
-  private BotService botService;
+  @Autowired private BotService botService;
 
   @Value("${telegram.admin.id}")
   private long telegramID;
@@ -44,14 +42,17 @@ class LMSServicePerformanceTest {
     Flux.range(1, CONCURRENT_USERS)
         .parallel()
         .runOn(Schedulers.parallel())
-        .flatMap(requestNum -> runSingleRequest(successCount)
-            .timeout(Duration.ofSeconds(30))
-            .doOnSuccess(v -> System.out.print("."))
-            .onErrorResume(e -> {
-              System.out.print("x");
-              return Mono.empty();
-            })
-            .doFinally(s -> latch.countDown()))
+        .flatMap(
+            requestNum ->
+                runSingleRequest(successCount)
+                    .timeout(Duration.ofSeconds(30))
+                    .doOnSuccess(v -> System.out.print("."))
+                    .onErrorResume(
+                        e -> {
+                          System.out.print("x");
+                          return Mono.empty();
+                        })
+                    .doFinally(s -> latch.countDown()))
         .sequential()
         .subscribe();
 
@@ -66,23 +67,27 @@ class LMSServicePerformanceTest {
     long start = System.currentTimeMillis();
 
     long rewindStart = System.currentTimeMillis();
-    return botService.rewindLastCheck(kiuNemoBot, telegramID, "5", "days")
+    return botService
+        .rewindLastCheck(kiuNemoBot, telegramID, "5", "days")
         .doOnSuccess(v -> record("rewind", System.currentTimeMillis() - rewindStart))
-        .then(Mono.defer(() -> {
-          long newsStart = System.currentTimeMillis();
-          return botService.sendNewsAsync(kiuNemoBot, telegramID)
-              .doOnSuccess(v -> record("news", System.currentTimeMillis() - newsStart));
-        }))
-        .doOnSuccess(v -> {
-          record("total", System.currentTimeMillis() - start);
-          successCount.incrementAndGet();
-        })
+        .then(
+            Mono.defer(
+                () -> {
+                  long newsStart = System.currentTimeMillis();
+                  return botService
+                      .sendNewsAsync(kiuNemoBot, telegramID)
+                      .doOnSuccess(v -> record("news", System.currentTimeMillis() - newsStart));
+                }))
+        .doOnSuccess(
+            v -> {
+              record("total", System.currentTimeMillis() - start);
+              successCount.incrementAndGet();
+            })
         .then();
   }
 
   private void record(String key, long value) {
-    timings.computeIfAbsent(key, k -> Collections.synchronizedList(new ArrayList<>()))
-        .add(value);
+    timings.computeIfAbsent(key, k -> Collections.synchronizedList(new ArrayList<>())).add(value);
   }
 
   private void printSummary(long duration, int success) {
@@ -104,7 +109,6 @@ class LMSServicePerformanceTest {
     long min = list.stream().mapToLong(Long::longValue).min().orElse(0);
     long max = list.stream().mapToLong(Long::longValue).max().orElse(0);
 
-    System.out.printf("%-10s  min=%4dms  max=%4dms  avg=%4dms%n",
-        label, min, max, avg);
+    System.out.printf("%-10s  min=%4dms  max=%4dms  avg=%4dms%n", label, min, max, avg);
   }
 }

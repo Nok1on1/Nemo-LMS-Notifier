@@ -22,17 +22,18 @@ import reactor.core.publisher.Mono;
 
 /**
  * Main Telegram bot controller for KIU LMS notification system.
- * <p>
- * This bot provides commands for student registration, course initialization, and checking new
+ *
+ * <p>This bot provides commands for student registration, course initialization, and checking new
  * announcements from the LMS system. All commands are processed asynchronously to ensure responsive
  * bot behavior.
- * <p>
- * Available commands:
+ *
+ * <p>Available commands:
+ *
  * <ul>
- *   <li>/start - Display welcome message and registration instructions</li>
- *   <li>"register token" - Initiate student registration flow</li>
- *   <li>/init_student - Initialize student courses via Playwright automation</li>
- *   <li>/check_news - Check for new announcements and homework across enrolled courses</li>
+ *   <li>/start - Display welcome message and registration instructions
+ *   <li>"register token" - Initiate student registration flow
+ *   <li>/init_student - Initialize student courses via Playwright automation
+ *   <li>/check_news - Check for new announcements and homework across enrolled courses
  * </ul>
  *
  * @see BotService
@@ -55,64 +56,89 @@ public class KiuNemoBot extends AbilityBot {
   }
 
   public Ability start() {
-    return Ability.builder().name("start").info("Start the bot and view instructions")
-        .privacy(PUBLIC).locality(ALL).action(ctx -> silent.send(WELCOME_MESSAGE, ctx.chatId()))
+    return Ability.builder()
+        .name("start")
+        .info("Start the bot and view instructions")
+        .privacy(PUBLIC)
+        .locality(ALL)
+        .action(ctx -> silent.send(WELCOME_MESSAGE, ctx.chatId()))
         .build();
   }
 
   public Ability about() {
-    return Ability.builder().name("about").privacy(PUBLIC).locality(ALL)
-        .action(ctx -> silent.send(ABOUT_MESSAGE, ctx.chatId())).build();
+    return Ability.builder()
+        .name("about")
+        .privacy(PUBLIC)
+        .locality(ALL)
+        .action(ctx -> silent.send(ABOUT_MESSAGE, ctx.chatId()))
+        .build();
   }
 
   public Ability defaultMessage() {
-    return Ability.builder().name(DEFAULT).flag(Flag.MESSAGE).privacy(PUBLIC).locality(ALL).input(0)
-        .action(ctx -> silent.send(HELP_MESSAGE, ctx.chatId())).build();
+    return Ability.builder()
+        .name(DEFAULT)
+        .flag(Flag.MESSAGE)
+        .privacy(PUBLIC)
+        .locality(ALL)
+        .input(0)
+        .action(ctx -> silent.send(HELP_MESSAGE, ctx.chatId()))
+        .build();
   }
 
   /**
    * Creates the student registration conversation flow.
-   * <p>
-   * Flow steps:
+   *
+   * <p>Flow steps:
+   *
    * <ol>
-   *   <li>User sends "register token"</li>
-   *   <li>Bot sends instruction image showing how to copy token</li>
-   *   <li>User uploads token.txt file</li>
-   *   <li>Bot validates and processes the registration</li>
+   *   <li>User sends "register token"
+   *   <li>Bot sends instruction image showing how to copy token
+   *   <li>User uploads token.txt file
+   *   <li>Bot validates and processes the registration
    * </ol>
    *
    * @return ReplyFlow configuration for registration process
    */
   public ReplyFlow registrationFlow() {
-    return ReplyFlow.builder(db).action(
-            (bot, upd) -> botService.sendRegistrationInstructions(bot, upd.getMessage().getChatId()))
-        .onlyIf(hasMessageWith("register token")).next(fileReceived()).build();
+    return ReplyFlow.builder(db)
+        .action(
+            (bot, upd) ->
+                botService.sendRegistrationInstructions(bot, upd.getMessage().getChatId()))
+        .onlyIf(hasMessageWith("register token"))
+        .next(fileReceived())
+        .build();
   }
 
   /**
    * Handles file uploads during registration.
-   * <p>
-   * Validates the uploaded file (must be .txt, max 10KB) and processes the student token for
+   *
+   * <p>Validates the uploaded file (must be .txt, max 10KB) and processes the student token for
    * registration. Processing is done asynchronously to avoid blocking the bot.
    *
    * @return Reply configuration for file handling
    */
   private Reply fileReceived() {
-    return Reply.of((bot, upd) -> {
-      botService.processRegistrationAsync(bot, upd)
-          .doOnSuccess(s -> silent.send("✅ Registration successful!", upd.getMessage().getChatId()))
-          .doOnError(e -> silent.send("Error, Something went wrong!", upd.getMessage().getChatId()))
-          .then().subscribe();
-    }, Flag.DOCUMENT);
+    return Reply.of(
+        (bot, upd) -> {
+          botService
+              .processRegistrationAsync(bot, upd)
+              .doOnSuccess(
+                  s -> silent.send("✅ Registration successful!", upd.getMessage().getChatId()))
+              .doOnError(
+                  e -> silent.send("Error, Something went wrong!", upd.getMessage().getChatId()))
+              .then()
+              .subscribe();
+        },
+        Flag.DOCUMENT);
   }
 
   /**
    * Handles the /init_student command.
-   * <p>
-   * Launches Playwright automation to navigate the LMS system and extract all enrolled courses for
-   * the student. This process takes approximately 1 minute and runs asynchronously.
-   * <p>
-   * Prerequisites: Student must be registered via the registration flow first.
+   *
+   * <p>Launches Playwright automation to navigate the LMS system and extract all enrolled courses
+   * for the student. This process takes approximately 1 minute and runs asynchronously.
+   *
+   * <p>Prerequisites: Student must be registered via the registration flow first.
    *
    * @return Ability configuration for student initialization
    */
@@ -123,49 +149,67 @@ public class KiuNemoBot extends AbilityBot {
             "Navigate the LMS system and extract all enrolled courses for later use in checking news")
         .locality(ALL)
         .privacy(PUBLIC)
-        .action(ctx ->
-            botService.initializeStudentAsync(ctx)
-                .doOnSuccess(v -> ctx.bot().getSilent()
-                    .send("Student courses initialized successfully", ctx.chatId()))
-                .doOnError(error -> {
-                  log.error("Error initializing student", error);
-                  ctx.bot().getSilent()
-                      .send("An error occurred during initialization.", ctx.chatId());
-                })
-                .subscribe()
-        )
+        .action(
+            ctx ->
+                botService
+                    .initializeStudentAsync(ctx)
+                    .doOnSuccess(
+                        v ->
+                            ctx.bot()
+                                .getSilent()
+                                .send("Student courses initialized successfully", ctx.chatId()))
+                    .doOnError(
+                        error -> {
+                          log.error("Error initializing student", error);
+                          ctx.bot()
+                              .getSilent()
+                              .send("An error occurred during initialization.", ctx.chatId());
+                        })
+                    .subscribe())
         .build();
   }
 
   /**
    * Handles the /check_news command.
-   * <p>
-   * Checks all enrolled courses for new announcements and assignments since the student's last
+   *
+   * <p>Checks all enrolled courses for new announcements and assignments since the student's last
    * check. Sends individual messages for each new announcement found.
-   * <p>
-   * Prerequisites: Student must be registered and initialized.
+   *
+   * <p>Prerequisites: Student must be registered and initialized.
    *
    * @return Ability configuration for checking news
    */
   public Ability checkNews() {
-    return Ability.builder().name("check_news")
-        .info("checks all of the courses' Announcements and Assignments").locality(ALL)
+    return Ability.builder()
+        .name("check_news")
+        .info("checks all of the courses' Announcements and Assignments")
+        .locality(ALL)
         .privacy(PUBLIC)
-        .action(ctx -> botService.sendNewsAsync(this, ctx.chatId()).then().subscribe()).build();
+        .action(ctx -> botService.sendNewsAsync(this, ctx.chatId()).then().subscribe())
+        .build();
   }
 
   public Ability rewindCheckNews() {
-    return Ability.builder().name("check_news_from").info(
+    return Ability.builder()
+        .name("check_news_from")
+        .info(
             "Get news from a specific time period in the past.\nUsage: /check_news_from <number> <hours|days|weeks|months>\nExample: /check_news_from 2 days")
-        .locality(ALL).input(2).privacy(PUBLIC).action(ctx -> {
-          botService.rewindLastCheck(this, ctx.chatId(), ctx.firstArg(), ctx.secondArg())
-              .then(botService.sendNewsAsync(this, ctx.chatId()))
-              .onErrorResume(err -> {
-                log.error(err.getMessage(), err);
-                return Mono.empty();
-              })
-              .subscribe();
-        }).build();
+        .locality(ALL)
+        .input(2)
+        .privacy(PUBLIC)
+        .action(
+            ctx -> {
+              botService
+                  .rewindLastCheck(this, ctx.chatId(), ctx.firstArg(), ctx.secondArg())
+                  .then(botService.sendNewsAsync(this, ctx.chatId()))
+                  .onErrorResume(
+                      err -> {
+                        log.error(err.getMessage(), err);
+                        return Mono.empty();
+                      })
+                  .subscribe();
+            })
+        .build();
   }
 
   @Override

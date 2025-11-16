@@ -58,9 +58,12 @@ public class BotService {
           kiuNemoBot.getSilent().send("Could not load registration instructions", chatId);
           return;
         }
-        SendPhoto sendPhoto = SendPhoto.builder().chatId(chatId)
-            .photo(new InputFile(imageStream, "copyToken.png")).caption(REGISTRATION_HELPER_MESSAGE)
-            .build();
+        SendPhoto sendPhoto =
+            SendPhoto.builder()
+                .chatId(chatId)
+                .photo(new InputFile(imageStream, "copyToken.png"))
+                .caption(REGISTRATION_HELPER_MESSAGE)
+                .build();
         kiuNemoBot.getTelegramClient().execute(sendPhoto);
       } catch (TelegramApiException e) {
         kiuNemoBot.getSilent().send("failed to fetch photo", chatId);
@@ -70,21 +73,21 @@ public class BotService {
     }
   }
 
-
   /**
    * Initializes a student's enrolled courses asynchronously using Playwright automation.
-   * <p>
-   * This method:
+   *
+   * <p>This method:
+   *
    * <ol>
-   *   <li>Verifies student exists in database</li>
-   *   <li>Decrypts student token for LMS authentication</li>
-   *   <li>Launches Playwright to scrape enrolled courses from LMS</li>
-   *   <li>Stores course data in database</li>
-   *   <li>Returns set of course names</li>
+   *   <li>Verifies student exists in database
+   *   <li>Decrypts student token for LMS authentication
+   *   <li>Launches Playwright to scrape enrolled courses from LMS
+   *   <li>Stores course data in database
+   *   <li>Returns set of course names
    * </ol>
-   * <p>
-   * Shows typing indicator to user during processing. If student not found,
-   * sends registration instructions and returns empty set.
+   *
+   * <p>Shows typing indicator to user during processing. If student not found, sends registration
+   * instructions and returns empty set.
    *
    * @param ctx context given by AbilityBot Action
    * @return CompletableFuture containing set of initialized course names
@@ -103,36 +106,59 @@ public class BotService {
       log.error("Failed to send typing action", e);
     }
 
-    return studentService.findByTelegramId(chatId).switchIfEmpty(Mono.fromRunnable(() -> {
-      silent.send("It looks like you haven't registered yet.", chatId);
-      silent.send("type /start for instructions", chatId);
-    }).then(Mono.empty())).flatMap(student -> {
-      String decryptedToken = textEncryptor.decrypt(student.getStudentToken());
+    return studentService
+        .findByTelegramId(chatId)
+        .switchIfEmpty(
+            Mono.fromRunnable(
+                    () -> {
+                      silent.send("It looks like you haven't registered yet.", chatId);
+                      silent.send("type /start for instructions", chatId);
+                    })
+                .then(Mono.empty()))
+        .flatMap(
+            student -> {
+              String decryptedToken = textEncryptor.decrypt(student.getStudentToken());
 
-      return lmsService.getRegistrationGroupIdResponse(decryptedToken).flatMap(GroupIdRes -> {
-            var getCoursesInfoReq = GetCoursesInfoRequest.builder()
-                .learningYear(GroupIdRes.getList().getFirst().getSeasonYear())
-                .registrationGroupId(GroupIdRes.getSelectedGroupId()).build();
+              return lmsService
+                  .getRegistrationGroupIdResponse(decryptedToken)
+                  .flatMap(
+                      GroupIdRes -> {
+                        var getCoursesInfoReq =
+                            GetCoursesInfoRequest.builder()
+                                .learningYear(GroupIdRes.getList().getFirst().getSeasonYear())
+                                .registrationGroupId(GroupIdRes.getSelectedGroupId())
+                                .build();
 
-            return lmsService.getStudentCoursesInfo(decryptedToken, getCoursesInfoReq);
-          }).flatMapMany(CoursesInfoRes -> Flux.fromIterable(CoursesInfoRes.getData())
-              .flatMap(data -> Flux.fromIterable(data.getItems())).map(
-                  item -> Course.builder().courseName(item.getName()).courseId(item.getListId())
-                      .groupId(item.getCourseGroupId()).build())).flatMap(courseService::save)
-          .flatMap(course -> studentService.addCourse(student.getTelegramId(), course)).then();
-    });
+                        return lmsService.getStudentCoursesInfo(decryptedToken, getCoursesInfoReq);
+                      })
+                  .flatMapMany(
+                      CoursesInfoRes ->
+                          Flux.fromIterable(CoursesInfoRes.getData())
+                              .flatMap(data -> Flux.fromIterable(data.getItems()))
+                              .map(
+                                  item ->
+                                      Course.builder()
+                                          .courseName(item.getName())
+                                          .courseId(item.getListId())
+                                          .groupId(item.getCourseGroupId())
+                                          .build()))
+                  .flatMap(courseService::save)
+                  .flatMap(course -> studentService.addCourse(student.getTelegramId(), course))
+                  .then();
+            });
   }
 
   /**
    * Processes student registration asynchronously by validating and storing student token.
-   * <p>
-   * Process flow:
+   *
+   * <p>Process flow:
+   *
    * <ol>
-   *   <li>Downloads token file from Telegram</li>
-   *   <li>Reads and encrypts the token</li>
-   *   <li>Creates new student record with encrypted token</li>
-   *   <li>Saves to database</li>
-   *   <li>Returns registration result</li>
+   *   <li>Downloads token file from Telegram
+   *   <li>Reads and encrypts the token
+   *   <li>Creates new student record with encrypted token
+   *   <li>Saves to database
+   *   <li>Returns registration result
    * </ol>
    *
    * @param bot BotInstance
@@ -172,32 +198,42 @@ public class BotService {
 
     silent.send("Processing your registration...", telegramId);
 
-    return studentService.findByTelegramId(telegramId)
+    return studentService
+        .findByTelegramId(telegramId)
         .flatMap(x -> studentService.deleteStudentByTelegramId(telegramId))
-        .then(Mono.fromCallable(() -> {
-          File getFile = telegramClient.execute(new GetFile(fileId));
-          java.io.File file = telegramClient.downloadFile(getFile);
-          return Files.readString(file.toPath()).trim();
-        }).subscribeOn(Schedulers.boundedElastic())).map(textEncryptor::encrypt).flatMap(
-            encToken -> studentService.save(
-                Student.builder().telegramId(telegramId).studentToken(encToken).build()));
+        .then(
+            Mono.fromCallable(
+                    () -> {
+                      File getFile = telegramClient.execute(new GetFile(fileId));
+                      java.io.File file = telegramClient.downloadFile(getFile);
+                      return Files.readString(file.toPath()).trim();
+                    })
+                .subscribeOn(Schedulers.boundedElastic()))
+        .map(textEncryptor::encrypt)
+        .flatMap(
+            encToken ->
+                studentService.save(
+                    Student.builder().telegramId(telegramId).studentToken(encToken).build()));
   }
 
   public Mono<UpdateResult> sendNewsAsync(AbilityBot bot, long telegramId) {
-    return Flux.concat(lmsService.checkNewAssignments(telegramId),
-            lmsService.checkNewAnnouncements(telegramId)).doFirst(
-            () -> bot.getSilent().send("Checking for new news...", telegramId))
+    return Flux.concat(
+            lmsService.checkNewAssignments(telegramId),
+            lmsService.checkNewAnnouncements(telegramId))
+        .doFirst(() -> bot.getSilent().send("Checking for new news...", telegramId))
         .switchIfEmpty(
             Mono.fromRunnable(() -> bot.getSilent().send("No new news found!", telegramId)))
         .flatMap(msg -> Mono.fromRunnable(() -> bot.getSilent().send(msg.toString(), telegramId)))
-        .then(studentService.updateLastCheck(telegramId)).doOnError(ex -> {
-          log.error("Error checking news for chatId: {}", telegramId, ex);
-          bot.getSilent().send(Constants.FAILED_CHECKING_NEWS_ERROR, telegramId);
-        });
+        .then(studentService.updateLastCheck(telegramId))
+        .doOnError(
+            ex -> {
+              log.error("Error checking news for chatId: {}", telegramId, ex);
+              bot.getSilent().send(Constants.FAILED_CHECKING_NEWS_ERROR, telegramId);
+            });
   }
 
-  public Mono<Void> rewindLastCheck(AbilityBot bot, long telegramId, String timePeriodNum,
-      String timeUnit) {
+  public Mono<Void> rewindLastCheck(
+      AbilityBot bot, long telegramId, String timePeriodNum, String timeUnit) {
     long rewindDays;
     try {
       rewindDays = Long.parseLong(timePeriodNum);
@@ -210,8 +246,7 @@ public class BotService {
       case "month", "months" -> rewindDays *= 30;
       case "week", "weeks" -> rewindDays *= 7;
       case "hour", "hours" -> rewindDays /= 24;
-      case "day", "days" -> {
-      }
+      case "day", "days" -> {}
       default -> {
         bot.getSilent().send(Constants.INVALID_TIME_UNIT_ERROR, telegramId);
         return Mono.empty();
@@ -226,8 +261,16 @@ public class BotService {
     LocalDateTime timeRewind = LocalDateTime.now().minusDays(rewindDays);
 
     long finalRewindDays = rewindDays;
-    return studentService.modifyLastCheck(telegramId, timeRewind).doOnSuccess(v -> bot.getSilent()
-        .send(String.format("✅ Last check rewound by %d days\n📅 Current last check: %s",
-            finalRewindDays, timeRewind), telegramId)).then();
+    return studentService
+        .modifyLastCheck(telegramId, timeRewind)
+        .doOnSuccess(
+            v ->
+                bot.getSilent()
+                    .send(
+                        String.format(
+                            "✅ Last check rewound by %d days\n📅 Current last check: %s",
+                            finalRewindDays, timeRewind),
+                        telegramId))
+        .then();
   }
 }

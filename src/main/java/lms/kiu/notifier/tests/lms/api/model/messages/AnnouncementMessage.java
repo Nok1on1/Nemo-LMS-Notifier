@@ -7,7 +7,6 @@ import lombok.Builder;
 import lombok.Data;
 import org.jsoup.Jsoup;
 
-
 @Data
 @Builder
 public class AnnouncementMessage {
@@ -37,14 +36,11 @@ public class AnnouncementMessage {
     return sb.toString();
   }
 
-
   public static class AnnouncementMessageBuilder {
 
     public AnnouncementMessageBuilder url(int courseId, int groupId) {
-      this.url = String.format(
-          "https://lms.kiu.edu.ge/#/lms/courses/%d/group/%d",
-          courseId, groupId
-      );
+      this.url =
+          String.format("https://lms.kiu.edu.ge/#/lms/courses/%d/group/%d", courseId, groupId);
       return this;
     }
 

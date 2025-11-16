@@ -2,29 +2,29 @@ package lms.kiu.notifier.tests.lms.api.model.response.subresponses.studentTables
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class Auditorium{
+public class Auditorium {
 
-	@JsonProperty("updated_at")
-	private String updatedAt;
+  @JsonProperty("updated_at")
+  private String updatedAt;
 
-	@JsonProperty("name")
-	private String name;
+  @JsonProperty("name")
+  private String name;
 
-	@JsonProperty("limit")
-	private int limit;
+  @JsonProperty("limit")
+  private int limit;
 
-	@JsonProperty("created_at")
-	private String createdAt;
+  @JsonProperty("created_at")
+  private String createdAt;
 
-	@JsonProperty("comment")
-	private String comment;
+  @JsonProperty("comment")
+  private String comment;
 
-	@JsonProperty("id")
-	private int id;
+  @JsonProperty("id")
+  private int id;
 
-	@JsonProperty("zoomLink")
-	private Object zoomLink;
+  @JsonProperty("zoomLink")
+  private Object zoomLink;
 
-	@JsonProperty("status")
-	private String status;
+  @JsonProperty("status")
+  private String status;
 }

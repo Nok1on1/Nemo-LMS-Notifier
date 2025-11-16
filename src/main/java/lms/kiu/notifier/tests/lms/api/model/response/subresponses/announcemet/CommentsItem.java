@@ -8,32 +8,32 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CommentsItem{
+public class CommentsItem {
 
-	@JsonProperty("professor")
-	private String professor;
+  @JsonProperty("professor")
+  private String professor;
 
-	@JsonProperty("updated_at")
-	private String updatedAt;
+  @JsonProperty("updated_at")
+  private String updatedAt;
 
-	@JsonProperty("student")
-	private Student student;
+  @JsonProperty("student")
+  private Student student;
 
-	@JsonProperty("announcement_id")
-	private int announcementId;
+  @JsonProperty("announcement_id")
+  private int announcementId;
 
-	@JsonProperty("student_id")
-	private int studentId;
+  @JsonProperty("student_id")
+  private int studentId;
 
-	@JsonProperty("created_at")
-	private String createdAt;
+  @JsonProperty("created_at")
+  private String createdAt;
 
-	@JsonProperty("comment")
-	private String comment;
+  @JsonProperty("comment")
+  private String comment;
 
-	@JsonProperty("id")
-	private int id;
+  @JsonProperty("id")
+  private int id;
 
-	@JsonProperty("prof_id")
-	private Object profId;
+  @JsonProperty("prof_id")
+  private Object profId;
 }

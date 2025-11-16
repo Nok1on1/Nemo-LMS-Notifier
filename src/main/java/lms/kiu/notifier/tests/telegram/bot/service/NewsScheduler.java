@@ -24,15 +24,17 @@ public class NewsScheduler {
   public void scheduleNewsNotifications() {
     LocalDateTime minus3Hours = LocalDateTime.now().minusHours(3);
 
-    studentService.findStudentsByLastCheckBefore(minus3Hours)
-        .flatMap(student ->
-            botService.sendNewsAsync(kiuNemoBot, student.getTelegramId())
-                .onErrorResume(ex -> {
-                  log.error("Failed sending news to student{}", student.getTelegramId());
-                  return Mono.empty();
-                })
-        )
+    studentService
+        .findStudentsByLastCheckBefore(minus3Hours)
+        .flatMap(
+            student ->
+                botService
+                    .sendNewsAsync(kiuNemoBot, student.getTelegramId())
+                    .onErrorResume(
+                        ex -> {
+                          log.error("Failed sending news to student{}", student.getTelegramId());
+                          return Mono.empty();
+                        }))
         .subscribe();
   }
-
 }

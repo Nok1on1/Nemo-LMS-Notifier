@@ -44,7 +44,6 @@ public class AssignmentMessage {
     return sb.toString();
   }
 
-
   public static class AssignmentMessageBuilder {
 
     public AssignmentMessageBuilder description(String description) {

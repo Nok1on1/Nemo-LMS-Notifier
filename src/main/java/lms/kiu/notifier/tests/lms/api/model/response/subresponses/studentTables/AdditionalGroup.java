@@ -2,11 +2,11 @@ package lms.kiu.notifier.tests.lms.api.model.response.subresponses.studentTables
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class AdditionalGroup{
+public class AdditionalGroup {
 
-	@JsonProperty("id")
-	private int id;
+  @JsonProperty("id")
+  private int id;
 
-	@JsonProperty("parentId")
-	private int parentId;
+  @JsonProperty("parentId")
+  private int parentId;
 }

@@ -45,8 +45,8 @@ public class StudentService {
 
     Update update = new Update().set("studentToken", token);
 
-    return template.findAndModify(query, update, FindAndModifyOptions.options().returnNew(true),
-        Student.class);
+    return template.findAndModify(
+        query, update, FindAndModifyOptions.options().returnNew(true), Student.class);
   }
 
   public Mono<UpdateResult> updateLastCheck(Long telegramId) {
@@ -66,7 +66,6 @@ public class StudentService {
     Update update = new Update().addToSet("enrolledCourseIds", courseData.getId());
     return template.updateFirst(query, update, "students");
   }
-
 
   public Flux<Student> findStudentsByLastCheckBefore(LocalDateTime lastCheckBefore) {
     return repo.findStudentsByLastCheckBefore(lastCheckBefore);

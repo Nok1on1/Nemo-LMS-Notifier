@@ -35,22 +35,30 @@ public class CourseService {
   public Mono<AnnouncementRequest> getAnnouncementRequest(String id) {
     return findCourseById(id)
         .map(course -> new AnnouncementRequest(course.getCourseId(), course.getGroupId()))
-        .doOnError(error -> log.error("Error getting announcement request for course id {}: {}",
-            id, error.getMessage()))
-        .onErrorResume(error -> {
-          log.warn("Skipping course id {} due to error", id);
-          return Mono.empty();
-        });
+        .doOnError(
+            error ->
+                log.error(
+                    "Error getting announcement request for course id {}: {}",
+                    id,
+                    error.getMessage()))
+        .onErrorResume(
+            error -> {
+              log.warn("Skipping course id {} due to error", id);
+              return Mono.empty();
+            });
   }
 
   public Mono<Tuple2<String, AssignmentRequest>> getCourseNameAndAssignmentRequest(String id) {
     return findCourseById(id)
-        .map(course -> Tuples.of(course.getCourseName(),
-            new AssignmentRequest(course.getCourseId(), course.getGroupId())))
-        .onErrorResume(error -> {
-          log.warn("Skipping course id {} due to error: {}", id, error.getMessage());
-          return Mono.empty();
-        });
+        .map(
+            course ->
+                Tuples.of(
+                    course.getCourseName(),
+                    new AssignmentRequest(course.getCourseId(), course.getGroupId())))
+        .onErrorResume(
+            error -> {
+              log.warn("Skipping course id {} due to error: {}", id, error.getMessage());
+              return Mono.empty();
+            });
   }
 }
-

@@ -33,17 +33,19 @@ public class LMSConfig {
     return WebClient.builder()
         .baseUrl(Constants.MAIN_URL)
         .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-        .exchangeStrategies(ExchangeStrategies.builder()
-            .codecs(configurer -> configurer
-                .defaultCodecs()
-                .maxInMemorySize(10 * 1024 * 1024))
-            .build())
+        .exchangeStrategies(
+            ExchangeStrategies.builder()
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))
+                .build())
         .build();
   }
 
   @Bean
-  public LMSService lmsService(StudentService studentService, CourseService courseService,
-      TextEncryptor textEncryptor, WebClient lmsWebClient) {
+  public LMSService lmsService(
+      StudentService studentService,
+      CourseService courseService,
+      TextEncryptor textEncryptor,
+      WebClient lmsWebClient) {
     return new LMSService(studentService, courseService, textEncryptor, lmsWebClient);
   }
 }

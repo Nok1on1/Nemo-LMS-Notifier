@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.longpolling.TelegramBotsLongPollingApplication;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-
 @Slf4j
 @Component
 @RequiredArgsConstructor

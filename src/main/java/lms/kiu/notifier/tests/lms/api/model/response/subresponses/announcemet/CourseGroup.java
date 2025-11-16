@@ -8,38 +8,38 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CourseGroup{
+public class CourseGroup {
 
-	@JsonProperty("seminar_ids")
-	private String seminarIds;
+  @JsonProperty("seminar_ids")
+  private String seminarIds;
 
-	@JsonProperty("professor")
-	private Professor professor;
+  @JsonProperty("professor")
+  private Professor professor;
 
-	@JsonProperty("list_id")
-	private int listId;
+  @JsonProperty("list_id")
+  private int listId;
 
-	@JsonProperty("updated_at")
-	private String updatedAt;
+  @JsonProperty("updated_at")
+  private String updatedAt;
 
-	@JsonProperty("name")
-	private String name;
+  @JsonProperty("name")
+  private String name;
 
-	@JsonProperty("group_ids")
-	private Object groupIds;
+  @JsonProperty("group_ids")
+  private Object groupIds;
 
-	@JsonProperty("created_at")
-	private String createdAt;
+  @JsonProperty("created_at")
+  private String createdAt;
 
-	@JsonProperty("id")
-	private int id;
+  @JsonProperty("id")
+  private int id;
 
-	@JsonProperty("type")
-	private String type;
+  @JsonProperty("type")
+  private String type;
 
-	@JsonProperty("prof_id")
-	private String profId;
+  @JsonProperty("prof_id")
+  private String profId;
 
-	@JsonProperty("status")
-	private String status;
+  @JsonProperty("status")
+  private String status;
 }

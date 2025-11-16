@@ -1,7 +1,7 @@
 package lms.kiu.notifier.tests.lms.api.model.response;
 
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 import lms.kiu.notifier.tests.lms.api.model.response.subresponses.registrationGroupId.ListItem;
 import lombok.Data;
 

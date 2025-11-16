@@ -11,8 +11,8 @@ import java.util.List;
 /**
  * Custom deserializer that handles fields that can be either: - A JSON array of strings: ["url1",
  * "url2"] - A single string: "url" - null
- * <p>
- * Always converts to List<String>
+ *
+ * <p>Always converts to List<String>
  */
 public class FlexibleListDeserializer extends JsonDeserializer<List<String>> {
 

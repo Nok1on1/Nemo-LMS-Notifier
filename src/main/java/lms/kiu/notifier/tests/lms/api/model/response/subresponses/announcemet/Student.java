@@ -8,23 +8,23 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Student{
+public class Student {
 
-	@JsonProperty("firstName")
-	private String firstName;
+  @JsonProperty("firstName")
+  private String firstName;
 
-	@JsonProperty("lastName")
-	private String lastName;
+  @JsonProperty("lastName")
+  private String lastName;
 
-	@JsonProperty("firstNameEng")
-	private String firstNameEng;
+  @JsonProperty("firstNameEng")
+  private String firstNameEng;
 
-	@JsonProperty("id")
-	private int id;
+  @JsonProperty("id")
+  private int id;
 
-	@JsonProperty("lastNameEng")
-	private String lastNameEng;
+  @JsonProperty("lastNameEng")
+  private String lastNameEng;
 
-	@JsonProperty("photo_code")
-	private String photoCode;
+  @JsonProperty("photo_code")
+  private String photoCode;
 }
