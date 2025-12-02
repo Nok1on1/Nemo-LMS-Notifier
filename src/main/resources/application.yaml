@@ -1,0 +1,20 @@
+spring:
+  config:
+    import: optional:file:../.env[.properties],file:.env[.properties]
+  application:
+    name: Nemo-LMS-Notifier
+  data:
+    mongodb:
+      uri: ${MONGO_URI}
+      database: ${DATABASE_NAME}
+
+telegram:
+  bot:
+    token: ${TELEGRAM_BOT_TOKEN}
+    username: ${TELEGRAM_BOT_USERNAME}
+  admin:
+    id: ${TELEGRAM_BOT_ADMIN}
+
+encryptor:
+  password: ${ENCRYPT_PASSWORD}
+  salt: ${ENCRYPT_SALT}
